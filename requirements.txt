@@ -7,4 +7,4 @@ google-genai
 chromadb
 # pymongo
 streamlit
-sqlite3 >= 3.35
+pysqlite3-binary

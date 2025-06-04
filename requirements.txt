@@ -5,5 +5,5 @@ groq
 python-dotenv
 google-genai
 chromadb
-pymongo
+# pymongo
 streamlit

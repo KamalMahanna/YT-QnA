@@ -1,8 +1,7 @@
-
 import streamlit as st
 from utils.UrlHelper import UrlHelper
 from utils.Transcript import Transcript
-from utils.Translator import translation_needed, bulk_translate
+# from utils.Translator import translation_needed, bulk_translate
 from DataBases.VectorStore import VectorStore
 from utils.LLM import GeminiLLM
 

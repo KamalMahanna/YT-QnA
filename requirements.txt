@@ -8,3 +8,4 @@ chromadb
 # pymongo
 streamlit
 pysqlite3-binary
+nltk

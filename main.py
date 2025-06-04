@@ -8,6 +8,7 @@ from utils.Transcript import Transcript
 # from utils.Translator import translation_needed, bulk_translate
 from DataBases.VectorStore import VectorStore
 from utils.LLM import GeminiLLM
+from utils.Summarizer import Summarizer
 
 url_helper = UrlHelper()
 transcript = Transcript()
@@ -96,10 +97,12 @@ with st.sidebar:
                 else:
                     st.write("Video ID extracted successfully")
 
-                    vector_store = VectorStore(gemini_api_key)
+                    if "vector_store" not in st.session_state:
+                        st.session_state.vector_store = VectorStore(gemini_api_key)
+
 
                     # check if transcript already exist
-                    if len(vector_store.collection.get(where={"youtube_id": video_id})['ids']) > 0:
+                    if len(st.session_state.vector_store.collection.get(where={"youtube_id": video_id})['ids']) > 0:
                         st.write("Transcript already exist in vector db")
                     
                     else:
@@ -129,11 +132,9 @@ with st.sidebar:
                             
                             # else:
                             #     st.write("Transcript already in English")
-                            
-
 
                             # store in vector db
-                            vector_store.add_documents(chunks, timestamps, video_id)
+                            st.session_state.vector_store.add_documents(chunks, timestamps, video_id)
                             st.write("Documents added to vector db successfully")
                 status.update(
                     label="Processing complete!", state="complete", expanded=False
@@ -143,30 +144,43 @@ with st.sidebar:
         
 
 if video_url and groq_api_key and gemini_api_key:
-    gemini_llm = GeminiLLM(gemini_api_key)
-    if "vector_store" not in st.session_state:
-        st.session_state.vector_store = VectorStore(gemini_api_key)
-    vector_store = st.session_state.vector_store
 
-    # Initialize chat history
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
+    tab1, tab2 = st.tabs(["📋 Summary", "💬 Chat"])
 
-    # Display chat messages from history on app rerun
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["parts"][0]['text'])
 
-    # Accept user input
-    if prompt := st.chat_input("What is up?"):
+    with tab1:
 
-        # Display user message in chat message container
-        with st.chat_message("user"):
-            st.markdown(prompt)
+        summarizer = Summarizer(gemini_api_key)
+        chunks_for_summarization = st.session_state.vector_store.collection.get(
+            where={"youtube_id": st.session_state.video_id},
+            include=["documents"],
+        )['documents']
+        
+        st.write_stream(summarizer.summarize_transcript(chunks_for_summarization))
 
-        # create system_instruction
-        realted_chunks = vector_store.retrieve_documents(prompt, st.session_state.video_id)
-        system_instruction =f"""
+
+    with tab2:
+        gemini_llm = GeminiLLM(gemini_api_key)
+
+        # Initialize chat history
+        if "messages" not in st.session_state:
+            st.session_state.messages = []
+
+        # Display chat messages from history on app rerun
+        for message in st.session_state.messages:
+            with st.chat_message(message["role"]):
+                st.markdown(message["parts"][0]['text'])
+
+        # Accept user input
+        if prompt := st.chat_input("What is up?"):
+
+            # Display user message in chat message container
+            with st.chat_message("user"):
+                st.markdown(prompt)
+
+            # create system_instruction
+            realted_chunks = st.session_state.vector_store.retrieve_documents(prompt, st.session_state.video_id)
+            system_instruction =f"""
 Instructions:
 - Be helpful and answer questions concisely. If you don't know the answer, say 'I don't know'
 - Utilize the context provided for accurate and specific information.
@@ -176,17 +190,17 @@ Context:
 {realted_chunks}
             """
 
-        # Display assistant response in chat message container
-        with st.chat_message("model", avatar="🤖"):
-            response = st.write_stream(
-                gemini_llm.TextLLM(
-                    system_instruction=system_instruction,
-                    history=st.session_state.messages,
-                    query=prompt,
+            # Display assistant response in chat message container
+            with st.chat_message("model", avatar="🤖"):
+                response = st.write_stream(
+                    gemini_llm.TextLLM(
+                        system_instruction=system_instruction,
+                        history=st.session_state.messages,
+                        query=prompt,
+                    )
                 )
-            )
-            
-        # Add user message to chat history
-        st.session_state.messages.append({"role": "user", "parts": [{"text": prompt}]})
-        # Add assistant response to chat history
-        st.session_state.messages.append({"role": "model", "parts": [{"text": response}]})
+                
+            # Add user message to chat history
+            st.session_state.messages.append({"role": "user", "parts": [{"text": prompt}]})
+            # Add assistant response to chat history
+            st.session_state.messages.append({"role": "model", "parts": [{"text": response}]})

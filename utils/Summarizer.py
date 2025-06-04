@@ -91,12 +91,13 @@ class Summarizer:
         return self.model
 
 
-    def summarize_transcript(self, transcript_text_list):
+    def summarize_transcript(self, transcript_text_list, max_chars=100_000):
+        self.max_chars = max_chars
         self.transcript_text_list = transcript_text_list
         self.big_text = " ".join(self.transcript_text_list)
 
         if len(self.big_text) > self.max_chars:
-            self.chunks = self.chunk_by_sentences(self.big_text)
+            self.chunks = self.chunk_by_sentences(self.big_text, self.max_chars)
 
             self.summaries = []
             for each_chunk in self.chunks:

@@ -1,7 +1,6 @@
-# import sys
-# import os
-# parent_dir = os.path.abspath(os.path.join(os.getcwd(), ".."))
-# sys.path.append(parent_dir)
+__import__('pysqlite3')
+import sys
+sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 
 import streamlit as st
 from utils.UrlHelper import UrlHelper

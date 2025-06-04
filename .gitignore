@@ -1,0 +1,8 @@
+.venv
+.env
+__pycache__
+utils/__pycache__
+Garbage
+DataBases/my_chroma_db
+DataBases/MongoDB.py
+test.py

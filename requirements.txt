@@ -1,0 +1,9 @@
+pytubefix
+youtube-transcript-api
+ipykernel
+groq
+python-dotenv
+google-genai
+chromadb
+pymongo
+streamlit

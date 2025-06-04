@@ -53,10 +53,8 @@ class GeminiLLM:
             ),
             history=self.history,
         )
-        self.response = self.model.send_message_stream(query)
-        
-        for each_chunk in self.response:
-            yield each_chunk.text
+        self.response = self.model.send_message(query)
+        return self.response.text
 
     def __call__(self, input):
         self.input = input

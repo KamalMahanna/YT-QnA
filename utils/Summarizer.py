@@ -34,7 +34,8 @@ class Summarizer:
             "Stay within the scope of this chunk. "
             "Focus on preserving the speaker's intent, "
             "and ensure the summary is clear and concise while reflecting the actual content. "
-            "If the chunk includes multiple topics, reflect that in your summary as well."
+            "If the chunk includes multiple topics, reflect that in your summary as well. "
+            "Please do not include Ads or markettings or promotions in the summary. "
             f"""Transcript Chunk: 
             ---
             {self.text}
@@ -49,10 +50,6 @@ class Summarizer:
             history=self.history,
             query="Provide your summary below: ",
         )
-
-        # self.summary = ""
-        # for each_chunk in self.model:
-        #     self.summary += each_chunk
 
         return self.model
 
@@ -84,10 +81,6 @@ class Summarizer:
             query="Provide the final summary below: ",
         )
 
-        # self.summary = ""
-        # for each_chunk in self.model:
-        #     self.summary += each_chunk
-
         return self.model
 
 
@@ -102,8 +95,9 @@ class Summarizer:
             self.summaries = []
             for each_chunk in self.chunks:
 
-                the_summary = " ".join([chunk_stream for chunk_stream in self.summarize_chunk(each_chunk)])
-                self.summaries.append(the_summary)
+                self.summaries.append(
+                    self.summarize_chunk(each_chunk)
+                )
 
             self.summary = self.summary_of_summaries(self.summaries)
             return self.summary

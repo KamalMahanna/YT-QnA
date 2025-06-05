@@ -20,17 +20,8 @@ with st.sidebar:
     
     # all inputs
     video_url = st.text_input("YouTube Video URL", key="video_url")
-
-    # try to load from .env
-    try:
-        load_dotenv()
-        groq_api_key = os.getenv("GROQ_API_KEY")
-        gemini_api_key = os.getenv("GEMINI_API_KEY")
-
-    # except ask for api keys
-    except:
-        groq_api_key = st.text_input("Groq API Key", key="groq_api_key", type="password")
-        gemini_api_key = st.text_input("Gemini API Key", key="gemini_api_key", type="password")
+    groq_api_key = st.text_input("Groq API Key", key="groq_api_key", type="password")
+    gemini_api_key = st.text_input("Gemini API Key", key="gemini_api_key", type="password")
 
 
     video_process_button = st.button("Process")

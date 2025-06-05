@@ -1,26 +1,10 @@
 from .LLM import GeminiLLM
-from nltk.tokenize import sent_tokenize
+from .HelperFunctions import chunk_by_sentences
 
 
 class Summarizer:
     def __init__(self, api_key):
         self.llm = GeminiLLM(api_key)
-
-    def chunk_by_sentences(self, text, max_chars=100_000):
-        self.text = text
-        self.max_chars = max_chars
-
-        self.sentences = sent_tokenize(self.text)
-        self.chunks, self.current_chunk = [], ""
-        for sentence in self.sentences:
-            if len(self.current_chunk) + len(sentence) <= self.max_chars:
-                self.current_chunk += " " + sentence
-            else:
-                self.chunks.append(self.current_chunk.strip())
-                self.current_chunk = sentence
-        if self.current_chunk:
-            self.chunks.append(self.current_chunk.strip())
-        return self.chunks
 
     def summarize_chunk(self, text:str):
         self.text = text
@@ -90,7 +74,7 @@ class Summarizer:
         self.big_text = " ".join(self.transcript_text_list)
 
         if len(self.big_text) > self.max_chars:
-            self.chunks = self.chunk_by_sentences(self.big_text, self.max_chars)
+            self.chunks = chunk_by_sentences(self.big_text, self.max_chars)
 
             self.summaries = []
             for each_chunk in self.chunks:
@@ -99,7 +83,17 @@ class Summarizer:
                     self.summarize_chunk(each_chunk)
                 )
 
-            self.summary = self.summary_of_summaries(self.summaries)
-            return self.summary
+            return self.summary_of_summaries(self.summaries)
         else:
             return self.summarize_chunk(self.big_text)
+
+
+if __name__ == "__main__":
+    import os
+    from dotenv import load_dotenv
+
+    load_dotenv(dotenv_path="../.env")
+    api_key = os.getenv("GEMINI_API_KEY")
+
+    summarizer = Summarizer(api_key)
+    print(summarizer.summarize_transcript("Others who use this device won’t see your activity, so you can browse more privately. This won't change how data is collected by websites that you visit and the services that they use, including Google. Downloads, bookmarks and reading list items will be saved"))

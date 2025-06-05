@@ -5,7 +5,8 @@ groq
 python-dotenv
 google-genai
 chromadb
-# pymongo
 streamlit
 pysqlite3-binary
 nltk
+pydub
+audioop-lts

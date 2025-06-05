@@ -1,7 +1,7 @@
 from youtube_transcript_api import YouTubeTranscriptApi
 from .AudioDownloader import AudioDownloader
 from .LLM import GroqLLM
-
+import os
 
 class Transcript:
     def __init__(self):
@@ -15,6 +15,9 @@ class Transcript:
         self.audio_path = self.audio_downloader.download_audio(self.video_id)
         self.llm = GroqLLM(api_key)
         self.transcript_list = self.llm.AudioLLM(self.audio_path, self.model_name)
+
+        if os.path.exists(self.audio_path):
+            os.remove(self.audio_path)
         return self.transcript_list
 
     def with_youtube_api(self, video_id):

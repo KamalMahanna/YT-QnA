@@ -1,92 +1,45 @@
 __import__('pysqlite3')
 import sys
+import os
+from dotenv import load_dotenv
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 
 import streamlit as st
-from utils.UrlHelper import UrlHelper
 from utils.Transcript import Transcript
 from DataBases.VectorStore import VectorStore
 from utils.LLM import GeminiLLM
 from utils.Summarizer import Summarizer
+from utils.HelperFunctions import create_chunks_with_timestamps, get_video_id
 
-url_helper = UrlHelper()
 transcript = Transcript()
-
-def create_chunks(transcript_list):
-    chunk_size = 500
-    chunks = []
-    timestamps = []
-
-    chunk_stack = ""
-    timestamp_stack = ""
-
-    for i in transcript_list:
-        the_text = i['text'].strip()
-        the_timestamp = i['start']
-            
-        # if the text is longer than the chunk size
-        if len(the_text) >= chunk_size:
-
-            # if previously any chunks exist, append them to the list
-            if chunk_stack:
-                chunks.append(chunk_stack)
-                timestamps.append(timestamp_stack)
-
-                # reset the stack
-                chunk_stack = ""
-                timestamp_stack = 0
-
-            # append the current chunk
-            chunks.append(the_text)
-            timestamps.append(the_timestamp)
-
-
-        # if the text is shorter than the chunk size
-        else:
-            
-            # if chunk and text combined is longer than the chunk size
-            if len(chunk_stack := chunk_stack + " " + the_text) > chunk_size:
-                
-                # split the chunk stack into sentences
-                splits = chunk_stack.split(". ")
-                temp_chunk_stack = ""
-                
-                # while the chunk stack is longer than the chunk size
-                while(len(chunk_stack := ". ".join(splits)) > chunk_size):
-                    
-                    # pop the last sentence from the splits and add it to the temp chunk stack
-                    temp_chunk_stack = splits.pop() + ". " + temp_chunk_stack
-                
-                # append the chunk stack and timestamp when the chunk stack is shorter than the chunk size
-                chunks.append(chunk_stack.strip())
-                timestamps.append(timestamp_stack)
-
-                # reset the stack to temp chunk stack
-                chunk_stack = temp_chunk_stack
-
-            # always update the timestamp    
-            timestamp_stack = the_timestamp
-
-    return chunks, timestamps
-
 
 
 st.title("YouTube QnA")
 
 with st.sidebar:
     
+    # all inputs
     video_url = st.text_input("YouTube Video URL", key="video_url")
 
-    groq_api_key = st.text_input("Groq API Key", key="groq_api_key", type="password")
-    gemini_api_key = st.text_input("Gemini API Key", key="gemini_api_key", type="password")
+    # try to load from .env
+    try:
+        load_dotenv()
+        groq_api_key = os.getenv("GROQ_API_KEY")
+        gemini_api_key = os.getenv("GEMINI_API_KEY")
 
-    video_process_button = st.button("Process",)
+    # except ask for api keys
+    except:
+        groq_api_key = st.text_input("Groq API Key", key="groq_api_key", type="password")
+        gemini_api_key = st.text_input("Gemini API Key", key="gemini_api_key", type="password")
+
+
+    video_process_button = st.button("Process")
     if video_process_button:
         if video_url and groq_api_key and gemini_api_key:
             
             with st.status("Processing data...", expanded=True) as status:
                 # get video id
-                video_id = url_helper.get_video_id(video_url)
+                video_id = get_video_id(video_url)
                 if "video_id" not in st.session_state:
                     st.session_state.video_id = video_id
 
@@ -121,11 +74,14 @@ with st.sidebar:
                             st.error("Transcript failed, Could you try with a different video?")
                         else:
                             # create chunks
-                            chunks, timestamps = create_chunks(transcript_list)
+                            chunks, timestamps = create_chunks_with_timestamps(transcript_list)
                             st.write("Chunks created successfully")
 
                             # store in vector db
                             st.session_state.vector_store.add_documents(chunks, timestamps, video_id)
+
+                            if "chunks_for_summarization" not in st.session_state:
+                                st.session_state.chunks_for_summarization = chunks
                             st.write("Documents added to vector db successfully")
                 status.update(
                     label="Processing complete!", state="complete", expanded=False
@@ -138,13 +94,17 @@ if video_url and groq_api_key and gemini_api_key:
 
     if 'summary' not in st.session_state:
         summarizer = Summarizer(gemini_api_key)
-        chunks_for_summarization = st.session_state.vector_store.collection.get(
-            where={"youtube_id": st.session_state.video_id},
-            include=["documents"],
-        )['documents']
-        st.session_state.summary = summarizer.summarize_transcript(chunks_for_summarization)
-    
-        st.markdown(st.session_state.summary)
+        if ("chunks_for_summarization" not in st.session_state) & ("vector_store" in st.session_state):
+            chunks_for_summarization = st.session_state.vector_store.collection.get(
+                where={"youtube_id": st.session_state.video_id},
+                include=["documents"],
+            )['documents']
+            st.session_state.chunks_for_summarization = chunks_for_summarization
+
+        if "chunks_for_summarization" in st.session_state:
+            with st.spinner("Summarizing..."):
+                st.session_state.summary = summarizer.summarize_transcript(st.session_state.chunks_for_summarization)
+            st.success(st.session_state.summary)
 
 
 
@@ -180,13 +140,14 @@ Context:
 
         # Display assistant response in chat message container
         with st.chat_message("model", avatar="🤖"):
-            response = st.markdown(
-                gemini_llm.TextLLM(
-                    system_instruction=system_instruction,
-                    history=st.session_state.messages,
-                    query=prompt,
-                )
-            )
+            
+            with st.spinner("Thinking..."):
+                response = gemini_llm.TextLLM(
+                        system_instruction=system_instruction,
+                        history=st.session_state.messages,
+                        query=prompt,
+                    )
+            st.markdown(response)
             
         # Add user message to chat history
         st.session_state.messages.append({"role": "user", "parts": [{"text": prompt}]})

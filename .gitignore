@@ -2,8 +2,10 @@
 .env
 __pycache__
 utils/__pycache__
+config/__pycache__
 utils/Translator.py
 Garbage
 DataBases/my_chroma_db
 DataBases/MongoDB.py
 test.py
+logs

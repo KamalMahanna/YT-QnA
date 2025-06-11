@@ -62,6 +62,7 @@ class VectorStore:
                     [int(i["start"]) for i in self.results["metadatas"][0]],
                 )
             ]
+            
 
         else:
             return []

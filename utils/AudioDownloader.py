@@ -29,7 +29,7 @@ class AudioDownloader:
                 self.audio = AudioSegment.from_file(self.temp_audio.name)
                 self.temp_audio_paths = []
                 self.no_of_required_chunks = int(np.ceil(os.path.getsize(self.temp_audio.name) / (15 * 1024**2)))
-                self.segments = np.linspace(0, os.path.getsize(self.temp_audio.name)+1, self.no_of_required_chunks + 1)
+                self.segments = np.linspace(0, len(self.audio)+1, self.no_of_required_chunks + 1)
 
                 for start_pt, end_pt in zip(self.segments[:-1], self.segments[1:]):
                     with tempfile.NamedTemporaryFile(
@@ -39,7 +39,6 @@ class AudioDownloader:
                         self.temp_audio_paths.append(self.temp_audio_chunk.name)
                     
                         self.temp_audio_chunk.flush()
-                
                 return self.temp_audio_paths
                 
             else:
@@ -47,3 +46,5 @@ class AudioDownloader:
                 return [self.temp_audio.name]
 
         
+        
+        # fix timestamps for multiple audio chunks  

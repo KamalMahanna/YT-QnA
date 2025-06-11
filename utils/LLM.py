@@ -13,6 +13,7 @@ class GroqLLM:
         self.model_name = model_name
         self.transcription_lists = []
 
+        self.previous_start_time = 0
         for audio_path in self.audio_paths:
             with open(audio_path, "rb") as file:
                 self.transcription = self.llm.audio.transcriptions.create(
@@ -28,13 +29,15 @@ class GroqLLM:
             self.transcription_segments = self.transcription.segments
             self.transcription_list = [
                 {
-                    "text": each_transcription_segment["text"],
-                    "start": each_transcription_segment["start"],
+                    "text": each_transcription_segment["text"].strip(),
+                    "start": each_transcription_segment["start"] + self.previous_start_time,
                 }
-                for each_transcription_segment in self.transcription_segments
+                for each_transcription_segment in self.transcription_segments if each_transcription_segment["text"].strip()
             ]
             self.transcription_lists.extend(self.transcription_list)
 
+            self.previous_start_time = self.transcription_segments[-1]["start"]
+        
         return self.transcription_lists
 
 

@@ -11,3 +11,4 @@ nltk
 pydub
 ffprobe-python
 audioop-lts
+ffmpeg-python

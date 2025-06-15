@@ -30,14 +30,16 @@ class GroqLLM:
             self.transcription_list = [
                 {
                     "text": each_transcription_segment["text"].strip(),
-                    "start": each_transcription_segment["start"] + self.previous_start_time,
+                    "start": each_transcription_segment["start"]
+                    + self.previous_start_time,
                 }
-                for each_transcription_segment in self.transcription_segments if each_transcription_segment["text"].strip()
+                for each_transcription_segment in self.transcription_segments
+                if each_transcription_segment["text"].strip()
             ]
             self.transcription_lists.extend(self.transcription_list)
 
             self.previous_start_time = self.transcription_segments[-1]["start"]
-        
+
         return self.transcription_lists
 
 
@@ -46,7 +48,11 @@ class GeminiLLM:
         self.llm = genai.Client(api_key=api_key)
 
     def TextLLM(
-        self, system_instruction, history, query, model_name="gemini-2.5-flash-preview-05-20"
+        self,
+        system_instruction,
+        history,
+        query,
+        model_name="gemini-2.5-flash-preview-05-20",
     ):
         self.history = history
         self.system_instruction = system_instruction
@@ -61,6 +67,23 @@ class GeminiLLM:
         )
         self.response = self.model.send_message(query)
         return self.response.text
+
+    def TTS(self, texts):
+        self.response = self.llm.models.generate_content(
+            model="gemini-2.5-flash-preview-tts",
+            contents=texts,
+            config=types.GenerateContentConfig(
+                response_modalities=["AUDIO"],
+                speech_config=types.SpeechConfig(
+                    voice_config=types.VoiceConfig(
+                        prebuilt_voice_config=types.PrebuiltVoiceConfig(
+                            voice_name="Zephyr",
+                        )
+                    )
+                ),
+            ),
+        )
+        return self.response.candidates[0].content.parts[0].inline_data.data
 
     def __call__(self, input):
         self.input = input

@@ -6,7 +6,7 @@ class Summarizer:
     def __init__(self, api_key):
         self.llm = GeminiLLM(api_key)
 
-    def summarize_chunk(self, text:str):
+    def summarize_chunk(self, text: str):
         self.text = text
 
         self.system_prompt = (
@@ -28,7 +28,7 @@ class Summarizer:
         )
 
         self.history = []
-        
+
         self.model = self.llm.TextLLM(
             system_instruction=self.system_prompt,
             history=self.history,
@@ -58,7 +58,7 @@ class Summarizer:
         )
 
         self.history = []
-        
+
         self.model = self.llm.TextLLM(
             system_instruction=self.system_prompt,
             history=self.history,
@@ -66,7 +66,6 @@ class Summarizer:
         )
 
         return self.model
-
 
     def summarize_transcript(self, transcript_text_list, max_chars=100_000):
         self.max_chars = max_chars
@@ -79,9 +78,7 @@ class Summarizer:
             self.summaries = []
             for each_chunk in self.chunks:
 
-                self.summaries.append(
-                    self.summarize_chunk(each_chunk)
-                )
+                self.summaries.append(self.summarize_chunk(each_chunk))
 
             return self.summary_of_summaries(self.summaries)
         else:
@@ -96,4 +93,8 @@ if __name__ == "__main__":
     api_key = os.getenv("GEMINI_API_KEY")
 
     summarizer = Summarizer(api_key)
-    print(summarizer.summarize_transcript("Others who use this device won’t see your activity, so you can browse more privately. This won't change how data is collected by websites that you visit and the services that they use, including Google. Downloads, bookmarks and reading list items will be saved"))
+    print(
+        summarizer.summarize_transcript(
+            "Others who use this device won’t see your activity, so you can browse more privately. This won't change how data is collected by websites that you visit and the services that they use, including Google. Downloads, bookmarks and reading list items will be saved"
+        )
+    )

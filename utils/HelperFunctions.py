@@ -3,6 +3,7 @@ import re
 import io
 import wave
 
+
 def create_chunks_with_timestamps(transcript_list):
     chunk_size = 500
     chunks = []
@@ -85,7 +86,7 @@ def get_video_id(url):
 
 def wave_bytesio(pcm: bytes, channels=1, rate=24000, sample_width=2) -> io.BytesIO:
     buffer = io.BytesIO()
-    with wave.open(buffer, 'wb') as wf:
+    with wave.open(buffer, "wb") as wf:
         wf.setnchannels(channels)
         wf.setsampwidth(sample_width)
         wf.setframerate(rate)

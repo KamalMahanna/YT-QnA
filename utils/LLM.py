@@ -71,7 +71,7 @@ class GeminiLLM:
     def TTS(self, texts):
         self.response = self.llm.models.generate_content(
             model="gemini-2.5-flash-preview-tts",
-            contents=texts,
+            contents=f"Read aloud in a energetic and friendly tone: {texts}",
             config=types.GenerateContentConfig(
                 response_modalities=["AUDIO"],
                 speech_config=types.SpeechConfig(

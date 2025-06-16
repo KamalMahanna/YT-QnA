@@ -123,12 +123,13 @@ if video_url and groq_api_key and gemini_api_key:
                 )
                 st.success(st.session_state.summary)
             with st.spinner("Generating Audio..."):
-                st.audio(
-                    wave_bytesio(
-                        gemini_llm.TTS(st.session_state.summary)
-                    ),autoplay=True
-                )
-
+                try:
+                    st.audio(
+                        wave_bytesio(gemini_llm.TTS(st.session_state.summary)),
+                        autoplay=True,
+                    )
+                except:
+                    st.warning("You might have exceeded the Gemini API limit")
 
     # Initialize chat history
     if "messages" not in st.session_state:

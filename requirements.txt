@@ -8,7 +8,5 @@ chromadb
 streamlit
 pysqlite3-binary
 nltk
-pydub
 ffprobe-python
 audioop-lts
-ffmpeg

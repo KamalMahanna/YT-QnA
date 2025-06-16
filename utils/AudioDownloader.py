@@ -1,9 +1,6 @@
 from pytubefix import YouTube
 import tempfile
 import os
-from pydub import AudioSegment
-import numpy as np
-
 
 class AudioDownloader:
     def __init__(self):
@@ -25,27 +22,10 @@ class AudioDownloader:
                 output_path="/" + self.audio_directory[1],
             )
 
-            if os.path.getsize(self.temp_audio.name) > (15 * 1024**2):
-                self.audio = AudioSegment.from_file(self.temp_audio.name)
-                self.temp_audio_paths = []
-                self.no_of_required_chunks = int(
-                    np.ceil(os.path.getsize(self.temp_audio.name) / (15 * 1024**2))
+            if os.path.getsize(self.temp_audio.name) >= (19 * 1024**2):
+                raise ValueError(
+                    "Video length crossed 19 minute. Please try with a smaller video. But you can install YT-QnA ( https://github.com/KamalMahanna/YT-QnA.git ) locally to process lengthy video"
                 )
-                self.segments = np.linspace(
-                    0, len(self.audio) + 1, self.no_of_required_chunks + 1
-                )
-
-                for start_pt, end_pt in zip(self.segments[:-1], self.segments[1:]):
-                    with tempfile.NamedTemporaryFile(
-                        suffix=".mp3", delete=False
-                    ) as self.temp_audio_chunk:
-                        self.audio[start_pt:end_pt].export(
-                            self.temp_audio_chunk.name, format="mp3"
-                        )
-                        self.temp_audio_paths.append(self.temp_audio_chunk.name)
-
-                        self.temp_audio_chunk.flush()
-                return self.temp_audio_paths
 
             else:
                 self.temp_audio.flush()

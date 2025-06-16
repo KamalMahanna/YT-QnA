@@ -11,7 +11,7 @@ from utils.LLM import GeminiLLM
 
 class VectorStore:
     def __init__(self, api_key):
-        self.chroma_client = chromadb.PersistentClient(path="/DataBases/my_chroma_db")
+        self.chroma_client = chromadb.PersistentClient(path="DataBases/my_chroma_db")
         self.collection = self.chroma_client.get_or_create_collection(
             "yt_transcripts", embedding_function=GeminiLLM(api_key)
         )

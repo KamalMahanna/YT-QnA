@@ -1,4 +1,4 @@
-pytubefix
+pytubefix==9.2.2
 youtube-transcript-api
 ipykernel
 groq

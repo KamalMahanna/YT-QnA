@@ -91,9 +91,6 @@ with st.sidebar:
                             st.session_state.vector_store.add_documents(
                                 chunks, timestamps, video_id
                             )
-
-                            if "chunks_for_summarization" not in st.session_state:
-                                st.session_state.chunks_for_summarization = chunks
                             st.write("Documents added to vector db successfully")
                 status.update(
                     label="Processing complete!", state="complete", expanded=False

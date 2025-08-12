@@ -3,6 +3,24 @@ import re
 import io
 import wave
 
+def split_text(txt,pattern):
+    splits = txt.split(pattern)
+    lst_ele = splits[-1]
+    splits = [i+pattern for i in splits[:-1] if i]
+    if lst_ele:
+        splits.append(lst_ele)
+    
+    return splits
+
+def splitter(txt):
+    splits = split_text(txt,". ")
+    splits = [split_text(i,", ") for i in splits if i.strip()]
+    splits = [i for j in splits for i in j]
+    splits = [split_text(i,"! ") for i in splits if i.strip()]
+    splits = [i for j in splits for i in j]
+    splits = [split_text(i,"? ") for i in splits if i.strip()]
+    splits = [i for j in splits for i in j]
+    return splits
 
 def create_chunks_with_timestamps(transcript_list):
     chunk_size = 500
@@ -39,7 +57,7 @@ def create_chunks_with_timestamps(transcript_list):
             if len(chunk_stack := chunk_stack + " " + the_text) > chunk_size:
 
                 # split the chunk stack into sentences
-                splits = chunk_stack.split(". ")
+                splits = splitter(chunk_stack)
                 temp_chunk_stack = ""
 
                 # while the chunk stack is longer than the chunk size

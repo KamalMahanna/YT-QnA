@@ -65,3 +65,6 @@ class VectorStore:
 
         else:
             return []
+        
+    def delete_collection(self):
+        self.chroma_client.delete_collection("yt_transcripts")

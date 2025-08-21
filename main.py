@@ -98,6 +98,15 @@ with st.sidebar:
         else:
             st.error("All fields are required")
 
+    # delete collection
+    delete_collection_button = st.button("Reset DataBase")
+    if delete_collection_button:
+        if "vector_store" in st.session_state:
+            st.session_state.vector_store.delete_collection()
+            st.session_state.vector_store = None
+            st.success("Collection deleted successfully")
+        else:
+            st.error("No collection to delete. Please process the video first")
 
 if video_url and groq_api_key and gemini_api_key:
 
@@ -175,3 +184,4 @@ Context:
         st.session_state.messages.append(
             {"role": "model", "parts": [{"text": response}]}
         )
+

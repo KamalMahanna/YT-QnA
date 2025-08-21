@@ -5,15 +5,17 @@ import wave
 
 def split_text(txt,pattern):
     splits = txt.split(pattern)
-    lst_ele = splits[-1]
-    splits = [i+pattern for i in splits[:-1] if i]
+    lst_ele = splits[-1].strip()
+    splits = [i.strip()+pattern for i in splits[:-1] if i.strip()]
     if lst_ele:
-        splits.append(lst_ele)
-    
+        if txt.strip()[-1] == pattern[0]:
+            splits.append(lst_ele+pattern)
+        else:
+            splits.append(lst_ele+" ")
     return splits
 
 def splitter(txt):
-    splits = split_text(txt,". ")
+    splits = split_text(txt+" ",". ")
     splits = [split_text(i,", ") for i in splits if i.strip()]
     splits = [i for j in splits for i in j]
     splits = [split_text(i,"! ") for i in splits if i.strip()]
@@ -23,20 +25,18 @@ def splitter(txt):
     return splits
 
 def create_chunks_with_timestamps(transcript_list):
-    chunk_size = 500
+    chunk_size = 1000
     chunks = []
     timestamps = []
 
     chunk_stack = ""
     timestamp_stack = ""
-
     for i in transcript_list:
-        the_text = i["text"].strip()
-        the_timestamp = i["start"]
+        the_text = i.text.strip()
+        the_timestamp = i.start
 
         # if the text is longer than the chunk size
         if len(the_text) >= chunk_size:
-
             # if previously any chunks exist, append them to the list
             if chunk_stack:
                 chunks.append(chunk_stack)
@@ -52,19 +52,27 @@ def create_chunks_with_timestamps(transcript_list):
 
         # if the text is shorter than the chunk size
         else:
-
+            if chunk_stack:
+                chunk_stack += the_text
+            else:
+                chunk_stack = the_text
+                
             # if chunk and text combined is longer than the chunk size
-            if len(chunk_stack := chunk_stack + " " + the_text) > chunk_size:
+            if len(chunk_stack) > chunk_size:
 
                 # split the chunk stack into sentences
                 splits = splitter(chunk_stack)
+                if len(splits) == 1:
+                    splits = [i+" " for i in splits[0].split() if i.strip()]
+                    
                 temp_chunk_stack = ""
-
+                
                 # while the chunk stack is longer than the chunk size
-                while len(chunk_stack := ". ".join(splits)) > chunk_size:
+                while len(chunk_stack := "".join(splits)) > chunk_size:
 
                     # pop the last sentence from the splits and add it to the temp chunk stack
-                    temp_chunk_stack = splits.pop() + ". " + temp_chunk_stack
+                    temp_chunk_stack = splits.pop() + temp_chunk_stack
+
 
                 # append the chunk stack and timestamp when the chunk stack is shorter than the chunk size
                 chunks.append(chunk_stack.strip())

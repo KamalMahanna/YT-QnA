@@ -89,7 +89,7 @@ class GeminiLLM:
         self.input = input
 
         self.embedding = self.llm.models.embed_content(
-            model="models/text-embedding-004",
+            model="gemini-embedding-001",
             contents=self.input,
             config=types.EmbedContentConfig(task_type="SEMANTIC_SIMILARITY"),
         )

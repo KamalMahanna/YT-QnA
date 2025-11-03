@@ -7,3 +7,6 @@ Garbage
 DataBases/my_chroma_db
 DataBases/MongoDB.py
 test.py
+.devcontainer
+.vscode
+.ipynb_checkpoints

@@ -1,46 +1,6 @@
-from groq import Groq
 from google import genai
 from google.genai import types
 import os
-
-
-class GroqLLM:
-    def __init__(self, api_key):
-        self.llm = Groq(api_key=api_key)
-
-    def AudioLLM(self, audio_paths, model_name="whisper-large-v3-turbo"):
-        self.audio_paths = audio_paths
-        self.model_name = model_name
-        self.transcription_lists = []
-
-        self.previous_start_time = 0
-        for audio_path in self.audio_paths:
-            with open(audio_path, "rb") as file:
-                self.transcription = self.llm.audio.transcriptions.create(
-                    file=(audio_path, file.read()),
-                    language="en",
-                    model=self.model_name,
-                    response_format="verbose_json",
-                )
-
-            if os.path.exists(audio_path):
-                os.remove(audio_path)
-
-            self.transcription_segments = self.transcription.segments
-            self.transcription_list = [
-                {
-                    "text": each_transcription_segment["text"].strip(),
-                    "start": each_transcription_segment["start"]
-                    + self.previous_start_time,
-                }
-                for each_transcription_segment in self.transcription_segments
-                if each_transcription_segment["text"].strip()
-            ]
-            self.transcription_lists.extend(self.transcription_list)
-
-            self.previous_start_time = self.transcription_segments[-1]["start"]
-
-        return self.transcription_lists
 
 
 class GeminiLLM:
@@ -52,7 +12,7 @@ class GeminiLLM:
         system_instruction,
         history,
         query,
-        model_name="gemini-2.5-flash-preview-05-20",
+        model_name="gemini-2.5-flash",
     ):
         self.history = history
         self.system_instruction = system_instruction

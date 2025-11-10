@@ -30,7 +30,6 @@ The application works as follows:
 │   └── test.ipynb
 ├── requirements.txt
 ├── utils
-│   ├── AudioDownloader.py
 │   ├── __init__.py
 │   ├── HelperFunctions.py
 │   ├── LLM.py

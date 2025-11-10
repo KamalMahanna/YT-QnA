@@ -1,6 +1,5 @@
 __import__("pysqlite3")
 import sys
-import os
 from dotenv import load_dotenv
 
 
@@ -26,14 +25,13 @@ with st.sidebar:
 
     # all inputs
     video_url = st.text_input("YouTube Video URL", key="video_url")
-    groq_api_key = st.text_input("Groq API Key", key="groq_api_key", type="password")
     gemini_api_key = st.text_input(
         "Gemini API Key", key="gemini_api_key", type="password"
     )
 
     video_process_button = st.button("Process")
     if video_process_button:
-        if video_url and groq_api_key and gemini_api_key:
+        if video_url and gemini_api_key:
 
             with st.status("Processing data...", expanded=True) as status:
                 # get video id
@@ -70,17 +68,11 @@ with st.sidebar:
                             transcript_list = transcript.with_youtube_api(video_id)
                             st.write("Transcript successfully with YouTube API")
                         except:
-                            st.write("Oops YouTube API failed, trying with Whisper")
-                            transcript_list = transcript.with_whisper(
-                                groq_api_key, video_id
-                            )
-                            st.write("Transcript successfully with Whisper")
-
-                        if not transcript_list:
                             st.error(
                                 "Transcript failed, Could you try with a different video?"
                             )
-                        else:
+
+                        if transcript_list:
                             # create chunks
                             chunks, timestamps = create_chunks_with_timestamps(
                                 transcript_list
@@ -102,7 +94,7 @@ with st.sidebar:
             st.error("All fields are required")
 
 
-if video_url and groq_api_key and gemini_api_key:
+if video_url and gemini_api_key:
 
     gemini_llm = GeminiLLM(gemini_api_key)
     if "summary" not in st.session_state:

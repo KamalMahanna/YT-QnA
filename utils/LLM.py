@@ -52,7 +52,7 @@ class GeminiLLM:
         system_instruction,
         history,
         query,
-        model_name="gemini-2.5-flash-preview-05-20",
+        model_name="gemini-flash-latest",
     ):
         self.history = history
         self.system_instruction = system_instruction

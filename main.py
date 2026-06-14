@@ -2,8 +2,15 @@ __import__("pysqlite3")
 import sys
 import os
 from dotenv import load_dotenv
+env_there = load_dotenv()
 
-
+if env_there:
+    groq_api_key = os.getenv("GROQ_API_KEY")
+    gemini_api_key = os.getenv("GEMINI_API_KEY")
+    
+else:
+    st.error("env is not provided")
+    st.stop()
 sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
 
 import streamlit as st
@@ -26,10 +33,7 @@ with st.sidebar:
 
     # all inputs
     video_url = st.text_input("YouTube Video URL", key="video_url")
-    groq_api_key = st.text_input("Groq API Key", key="groq_api_key", type="password")
-    gemini_api_key = st.text_input(
-        "Gemini API Key", key="gemini_api_key", type="password"
-    )
+
 
     video_process_button = st.button("Process")
     if video_process_button:

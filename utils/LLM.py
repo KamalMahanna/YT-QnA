@@ -91,7 +91,18 @@ class GeminiLLM:
         self.embedding = self.llm.models.embed_content(
             model="gemini-embedding-001",
             contents=self.input,
-            config=types.EmbedContentConfig(task_type="SEMANTIC_SIMILARITY"),
+            config=types.EmbedContentConfig(task_type="RETRIEVAL_DOCUMENT"),
+        )
+
+        return [each_embedding.values for each_embedding in self.embedding.embeddings]
+
+    def embed_query(self, input):
+        self.query_input = input
+
+        self.embedding = self.llm.models.embed_content(
+            model="gemini-embedding-001",
+            contents=self.query_input,
+            config=types.EmbedContentConfig(task_type="RETRIEVAL_QUERY"),
         )
 
         return [each_embedding.values for each_embedding in self.embedding.embeddings]

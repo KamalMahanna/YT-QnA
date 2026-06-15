@@ -59,20 +59,36 @@ The application works as follows:
    git clone https://github.com/KamalMahanna/YT-QnA.git
    cd YT-QnA
    ```
-2. Install Docker
+
+2. Set up your environment variables:
+
+   Copy `.env.example` to `.env` and paste your API keys:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   Open `.env` in a text editor and fill in your keys:
+   * **GROQ_API_KEY:** Get one from [Groq Console](https://console.groq.com/keys)
+   * **GEMINI_API_KEY:** Get one from [Google AI Studio](https://aistudio.google.com/apikey)
+
+3. Install Docker:
 
    Click [here](https://docs.docker.com/get-started/get-docker/) for the Docker installation page
-3. Build the Docker image:
+
+4. Build the Docker image:
 
    ```bash
    docker build --network host -t yt-qna .
    ```
-4. Run the Docker container:
+
+5. Run the Docker container:
 
    ```bash
-   docker run -p 8501:8501 -v database_volume:/DataBases/my_chroma_db yt-qna:latest
+   docker run --network host --env-file .env -v database_volume:/DataBases/my_chroma_db yt-qna:latest
    ```
-5. Open the application in your browser:
+
+6. Open the application in your browser:
 
    [http://0.0.0.0:8501/](http://0.0.0.0:8501/)
 

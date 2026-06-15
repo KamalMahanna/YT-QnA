@@ -1,5 +1,8 @@
 __import__("pysqlite3")
 import sys
+sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
+
+import streamlit as st
 import os
 from dotenv import load_dotenv
 env_there = load_dotenv()
@@ -7,13 +10,10 @@ env_there = load_dotenv()
 if env_there:
     groq_api_key = os.getenv("GROQ_API_KEY")
     gemini_api_key = os.getenv("GEMINI_API_KEY")
-    
 else:
     st.error("env is not provided")
     st.stop()
-sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
 
-import streamlit as st
 from utils.Transcript import Transcript
 from DataBases.VectorStore import VectorStore
 from utils.LLM import GeminiLLM

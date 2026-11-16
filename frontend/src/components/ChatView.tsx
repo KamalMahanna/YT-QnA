@@ -115,13 +115,10 @@ export const ChatView: React.FC<ChatViewProps> = ({
                   <span className="inline-block w-1.5 h-4 ml-1 bg-blue-400 animate-pulse align-middle" />
                 </>
               ) : (
-                <div className="flex items-center gap-2.5 py-1 px-1">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-blue-400/80 animate-bounce [animation-delay:-0.3s]" />
-                    <span className="w-2 h-2 rounded-full bg-blue-400/80 animate-bounce [animation-delay:-0.15s]" />
-                    <span className="w-2 h-2 rounded-full bg-blue-400/80 animate-bounce" />
-                  </div>
-                  <span className="text-xs text-zinc-400 font-medium tracking-tight">Thinking...</span>
+                <div className="flex items-center gap-1.5 py-1 px-1">
+                  <span className="w-2 h-2 rounded-full bg-blue-400/80 animate-bounce [animation-delay:-0.3s]" />
+                  <span className="w-2 h-2 rounded-full bg-blue-400/80 animate-bounce [animation-delay:-0.15s]" />
+                  <span className="w-2 h-2 rounded-full bg-blue-400/80 animate-bounce" />
                 </div>
               )}
             </div>

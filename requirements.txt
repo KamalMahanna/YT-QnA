@@ -1,6 +1,5 @@
 pytubefix==9.2.2
 youtube-transcript-api
-ipykernel
 groq
 python-dotenv
 google-genai
@@ -12,3 +11,7 @@ pydub
 ffprobe-python
 audioop-lts
 ffmpeg
+fastapi
+uvicorn
+pinecone
+httpx

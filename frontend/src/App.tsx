@@ -3,7 +3,7 @@ import { Navbar } from './components/Navbar'
 import { YouTubePlayer } from './components/YouTubePlayer'
 import { ChatView } from './components/ChatView'
 import { SummaryView } from './components/SummaryView'
-import type { ChatMessage, SourceCitation, VideoStatus } from './types'
+import type { ChatMessage, VideoStatus } from './types'
 import { MessageSquare, FileText, AlertCircle, Sparkles } from 'lucide-react'
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || ''
@@ -26,7 +26,6 @@ export const App: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
   const [streamingTokens, setStreamingTokens] = useState('')
-  const [streamingSources, setStreamingSources] = useState<SourceCitation[]>([])
 
   // Summary & TTS Audio state
   const [summary, setSummary] = useState<string | null>(null)
@@ -160,7 +159,6 @@ export const App: React.FC = () => {
     setMessages((prev) => [...prev, userMessage])
     setIsStreaming(true)
     setStreamingTokens('')
-    setStreamingSources([])
 
     try {
       // Build history for backend
@@ -186,7 +184,6 @@ export const App: React.FC = () => {
       const reader = response.body.getReader()
       const decoder = new TextDecoder()
       let accumulatedText = ''
-      let capturedSources: SourceCitation[] = []
 
       while (true) {
         const { value, done } = await reader.read()
@@ -199,14 +196,9 @@ export const App: React.FC = () => {
           if (line.startsWith('data: ')) {
             try {
               const eventData = JSON.parse(line.slice(6))
-              if (eventData.type === 'sources') {
-                capturedSources = eventData.sources || []
-                setStreamingSources(capturedSources)
-              } else if (eventData.type === 'token') {
+              if (eventData.type === 'token') {
                 accumulatedText += eventData.token
                 setStreamingTokens(accumulatedText)
-              } else if (eventData.type === 'done') {
-                // Done event
               }
             } catch {
               // Ignore partial JSON
@@ -220,7 +212,6 @@ export const App: React.FC = () => {
         id: `asst-${Date.now()}`,
         role: 'model',
         text: accumulatedText,
-        sources: capturedSources,
         createdAt: Date.now(),
       }
 
@@ -236,7 +227,6 @@ export const App: React.FC = () => {
     } finally {
       setIsStreaming(false)
       setStreamingTokens('')
-      setStreamingSources([])
     }
   }
 
@@ -395,7 +385,6 @@ export const App: React.FC = () => {
                   onSendMessage={handleSendMessage}
                   isStreaming={isStreaming}
                   streamingTokens={streamingTokens}
-                  streamingSources={streamingSources}
                   onSeek={handleSeek}
                   onClearHistory={handleClearHistory}
                 />
@@ -409,6 +398,7 @@ export const App: React.FC = () => {
                   audioBlob={audioBlob}
                   isLoadingAudio={isLoadingAudio}
                   onFetchAudio={handleFetchAudio}
+                  onSeek={handleSeek}
                 />
               )}
             </div>

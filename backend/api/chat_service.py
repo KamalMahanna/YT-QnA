@@ -87,9 +87,10 @@ class ChatService:
         yield f"data: {json.dumps({'type': 'sources', 'sources': sources})}\n\n"
 
         system_instruction = f"""Instructions:
-- Be helpful and answer questions concisely based on the context provided.
-- Ground all facts in the context. Every time you mention a fact or information from a source, cite it with the exact markdown link provided in the Source Citation header (e.g. [MM:SS](URL)).
-- Never fabricate timestamps. Use strictly the citation links provided in the Context headers.
+- Be helpful, structured, and answer questions concisely using clean Markdown (e.g. bold titles, bullet points).
+- Ground all facts strictly in the context provided.
+- Whenever you state a fact or point from the video, cite the timestamp using square brackets like [MM:SS] (e.g. [10:02]). Do not write "Source 1", "Citation", or raw URLs—only the [MM:SS] timeline citation.
+- Never fabricate timestamps. Use strictly the timestamps present in the Context.
 - If the context does not contain the answer, say 'I don't know based on the video.'
 
 Context:

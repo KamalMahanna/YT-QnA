@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { ArrowUp, Play, Trash2, Bot, Bookmark } from 'lucide-react'
-import type { ChatMessage, SourceCitation } from '../types'
+import { ArrowUp, Trash2, Bot } from 'lucide-react'
+import type { ChatMessage } from '../types'
+import { MarkdownRenderer } from './MarkdownRenderer'
 
 interface ChatViewProps {
   messages: ChatMessage[]
   onSendMessage: (text: string) => void
   isStreaming: boolean
   streamingTokens: string
-  streamingSources: SourceCitation[]
   onSeek: (seconds: number) => void
   onClearHistory: () => void
 }
@@ -17,7 +17,6 @@ export const ChatView: React.FC<ChatViewProps> = ({
   onSendMessage,
   isStreaming,
   streamingTokens,
-  streamingSources,
   onSeek,
   onClearHistory,
 }) => {
@@ -34,60 +33,6 @@ export const ChatView: React.FC<ChatViewProps> = ({
       onSendMessage(input.trim())
       setInput('')
     }
-  }
-
-  // Render markdown with clickable timestamp citation pills
-  const renderMessageContent = (text: string) => {
-    // Match timestamp citations like [02:14](https://www.youtube.com/watch?v=...&t=134s) or [MM:SS]
-    const regex = /\[(\d{1,2}:\d{2}(?::\d{2})?)\]\((?:https?:\/\/[^\s)]+t=(\d+)s?|[^\s)]+)?\)/g
-
-    const parts = []
-    let lastIndex = 0
-    let match
-
-    while ((match = regex.exec(text)) !== null) {
-      const matchStart = match.index
-      const matchEnd = regex.lastIndex
-
-      // Text preceding citation
-      if (matchStart > lastIndex) {
-        parts.push(text.substring(lastIndex, matchStart))
-      }
-
-      const timestampStr = match[1]
-      let seconds = match[2] ? parseInt(match[2], 10) : null
-
-      if (seconds === null) {
-        // Parse MM:SS to seconds
-        const timeSegments = timestampStr.split(':').map(Number)
-        if (timeSegments.length === 2) {
-          seconds = timeSegments[0] * 60 + timeSegments[1]
-        } else if (timeSegments.length === 3) {
-          seconds = timeSegments[0] * 3600 + timeSegments[1] * 60 + timeSegments[2]
-        }
-      }
-
-      const secVal = seconds || 0
-
-      parts.push(
-        <button
-          key={`cite-${matchStart}`}
-          onClick={() => onSeek(secVal)}
-          className="inline-flex items-center gap-1 mx-1 px-2 py-0.5 rounded-full bg-blue-500/15 hover:bg-blue-500/25 border border-blue-400/30 text-blue-300 text-[11px] font-mono font-medium align-middle active:scale-95 transition-all"
-        >
-          <Play className="w-2.5 h-2.5 fill-blue-300" />
-          <span>{timestampStr}</span>
-        </button>
-      )
-
-      lastIndex = matchEnd
-    }
-
-    if (lastIndex < text.length) {
-      parts.push(text.substring(lastIndex))
-    }
-
-    return parts.length > 0 ? parts : text
   }
 
   return (
@@ -151,29 +96,10 @@ export const ChatView: React.FC<ChatViewProps> = ({
                   : 'bg-white/[0.05] border border-white/[0.08] text-zinc-200'
               }`}
             >
-              <div className="whitespace-pre-wrap">{renderMessageContent(msg.text)}</div>
-
-              {/* Source drawer if citations present */}
-              {msg.sources && msg.sources.length > 0 && (
-                <div className="mt-3 pt-2.5 border-t border-white/[0.08] space-y-1.5">
-                  <div className="flex items-center gap-1 text-[11px] text-zinc-400 font-medium">
-                    <Bookmark className="w-3 h-3 text-blue-400" />
-                    <span>Referenced Citations</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {msg.sources.map((s) => (
-                      <button
-                        key={s.source_idx}
-                        onClick={() => onSeek(s.start)}
-                        className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/[0.06] hover:bg-white/[0.12] text-[11px] text-zinc-300 active:scale-95 transition-all"
-                        title={s.snippet}
-                      >
-                        <Play className="w-2.5 h-2.5 fill-current text-blue-400" />
-                        <span>Source {s.source_idx} ({s.timestamp})</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+              {msg.role === 'user' ? (
+                <div className="whitespace-pre-wrap">{msg.text}</div>
+              ) : (
+                <MarkdownRenderer content={msg.text} onSeek={onSeek} />
               )}
             </div>
           </div>
@@ -183,32 +109,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
         {isStreaming && (
           <div className="flex flex-col items-start">
             <div className="max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed bg-white/[0.05] border border-white/[0.08] text-zinc-200">
-              <div className="whitespace-pre-wrap">
-                {renderMessageContent(streamingTokens)}
-                <span className="inline-block w-1.5 h-4 ml-1 bg-blue-400 animate-pulse align-middle" />
-              </div>
-
-              {streamingSources.length > 0 && (
-                <div className="mt-3 pt-2.5 border-t border-white/[0.08] space-y-1.5">
-                  <div className="flex items-center gap-1 text-[11px] text-zinc-400 font-medium">
-                    <Bookmark className="w-3 h-3 text-blue-400" />
-                    <span>Referenced Citations</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {streamingSources.map((s) => (
-                      <button
-                        key={s.source_idx}
-                        onClick={() => onSeek(s.start)}
-                        className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/[0.06] hover:bg-white/[0.12] text-[11px] text-zinc-300 active:scale-95 transition-all"
-                        title={s.snippet}
-                      >
-                        <Play className="w-2.5 h-2.5 fill-current text-blue-400" />
-                        <span>Source {s.source_idx} ({s.timestamp})</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <MarkdownRenderer content={streamingTokens} onSeek={onSeek} />
+              <span className="inline-block w-1.5 h-4 ml-1 bg-blue-400 animate-pulse align-middle" />
             </div>
           </div>
         )}

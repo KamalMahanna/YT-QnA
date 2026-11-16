@@ -1,6 +1,7 @@
 import React from 'react'
 import { Sparkles, RefreshCw } from 'lucide-react'
 import { AudioPlayer } from './AudioPlayer'
+import { MarkdownRenderer } from './MarkdownRenderer'
 
 interface SummaryViewProps {
   summary: string | null
@@ -9,6 +10,7 @@ interface SummaryViewProps {
   audioBlob: Blob | null
   isLoadingAudio: boolean
   onFetchAudio: () => void
+  onSeek?: (seconds: number) => void
 }
 
 export const SummaryView: React.FC<SummaryViewProps> = ({
@@ -18,6 +20,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
   audioBlob,
   isLoadingAudio,
   onFetchAudio,
+  onSeek = () => {},
 }) => {
   return (
     <div className="flex flex-col gap-4 w-full">
@@ -57,9 +60,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
             <div className="h-4 bg-white/[0.04] rounded-md w-2/3" />
           </div>
         ) : summary ? (
-          <div className="prose prose-invert prose-sm max-w-none text-zinc-300 leading-relaxed font-normal whitespace-pre-line text-sm">
-            {summary}
-          </div>
+          <MarkdownRenderer content={summary} onSeek={onSeek} />
         ) : (
           <div className="flex flex-col items-center justify-center py-8 text-center gap-3">
             <p className="text-sm text-zinc-400">Generate a concise AI summary of this video's key insights.</p>

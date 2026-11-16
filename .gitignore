@@ -1,10 +1,11 @@
 .venv
-.env
-__pycache__
-utils/__pycache__
+**/.env
+**/__pycache__/
+**/my_chroma_db/
 utils/Translator.py
 Garbage
-DataBases/my_chroma_db
 DataBases/MongoDB.py
 test.py
 .agents/
+node_modules/
+dist/

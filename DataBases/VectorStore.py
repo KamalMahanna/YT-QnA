@@ -84,11 +84,20 @@ class VectorStore:
             return []
 
         retrieved = [
-            {"text": text, "start": int(meta.get("start", 0))}
+            {"text": text, "start": int(float(meta.get("start", 0)))}
             for text, meta in zip(matched_docs, matched_metas)
         ]
         logger.info("Retrieved %d relevant chunks for query", len(retrieved))
         return retrieved
+
+    def delete_video(self, video_id: str) -> None:
+        """Delete all indexed chunks for a specific YouTube video."""
+        logger.info("Deleting documents for video ID: %s", video_id)
+        try:
+            self.collection.delete(where={"youtube_id": video_id})
+            logger.info("Successfully deleted chunks for video ID: %s", video_id)
+        except Exception as e:
+            logger.exception("Error deleting video %s: %s", video_id, e)
 
     def delete_collection(self) -> None:
         """Delete the current collection and reset state."""

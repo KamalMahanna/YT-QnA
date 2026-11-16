@@ -9,6 +9,16 @@ from nltk.tokenize import sent_tokenize
 logger = logging.getLogger(__name__)
 
 
+def format_timestamp(seconds: float) -> str:
+    """Format total seconds into HH:MM:SS or MM:SS string."""
+    total_seconds = max(0, int(seconds))
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, secs = divmod(remainder, 60)
+    if hours > 0:
+        return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+    return f"{minutes:02d}:{secs:02d}"
+
+
 def split_text(txt: str, pattern: str) -> list[str]:
     """Split text by pattern, preserving delimiter at the end of each segment."""
     splits = txt.split(pattern)
@@ -34,67 +44,78 @@ def create_chunks_with_timestamps(
     transcript_list: list[Any],
     chunk_size: int = 1000,
 ) -> tuple[list[str], list[float]]:
-    """Group transcript entries into text chunks of roughly chunk_size characters with start timestamps.
+    """Group transcript entries into text chunks of roughly chunk_size characters with accurate start timestamps.
 
     Supports both object snippets (with .text/.start) and dictionary representations.
     """
     chunks: list[str] = []
     timestamps: list[float] = []
 
-    chunk_stack = ""
-    timestamp_stack = 0.0
+    current_chunk_texts: list[str] = []
+    current_chunk_start: float | None = None
+    current_length = 0
 
-    for i in transcript_list:
-        the_text = (getattr(i, "text", None) or (i.get("text") if isinstance(i, dict) else "") or "").strip()
-        the_timestamp = getattr(i, "start", None) or (i.get("start") if isinstance(i, dict) else 0.0) or 0.0
+    for item in transcript_list:
+        text = (getattr(item, "text", None) or (item.get("text") if isinstance(item, dict) else "") or "").strip()
+        start = getattr(item, "start", None) or (item.get("start") if isinstance(item, dict) else 0.0) or 0.0
 
-        if not the_text:
+        if not text:
             continue
 
-        if len(the_text) >= chunk_size:
-            if chunk_stack:
-                chunks.append(chunk_stack)
-                timestamps.append(timestamp_stack)
-                chunk_stack = ""
-                timestamp_stack = 0.0
+        text_len = len(text)
 
-            chunks.append(the_text)
-            timestamps.append(the_timestamp)
-        else:
-            if chunk_stack:
-                chunk_stack += " " + the_text
-            else:
-                chunk_stack = the_text
-                timestamp_stack = the_timestamp
+        # If a single snippet is exceptionally large, flush accumulator and split it
+        if text_len > chunk_size:
+            if current_chunk_texts:
+                chunks.append(" ".join(current_chunk_texts))
+                timestamps.append(current_chunk_start if current_chunk_start is not None else 0.0)
+                current_chunk_texts = []
+                current_chunk_start = None
+                current_length = 0
 
-            if len(chunk_stack) > chunk_size:
-                splits = splitter(chunk_stack)
-                if len(splits) == 1:
-                    splits = [f"{word} " for word in splits[0].split() if word.strip()]
+            sub_chunks = chunk_by_sentences(text, max_chars=chunk_size)
+            for sc in sub_chunks:
+                if sc.strip():
+                    chunks.append(sc.strip())
+                    timestamps.append(float(start))
+            continue
 
-                temp_chunk_stack = ""
-                while len("".join(splits)) > chunk_size and splits:
-                    temp_chunk_stack = splits.pop() + temp_chunk_stack
+        # If adding this snippet exceeds the target chunk size, finalize current chunk
+        if current_chunk_texts and (current_length + text_len + 1 > chunk_size):
+            chunks.append(" ".join(current_chunk_texts))
+            timestamps.append(current_chunk_start if current_chunk_start is not None else 0.0)
+            current_chunk_texts = []
+            current_chunk_start = None
+            current_length = 0
 
-                resolved_chunk = "".join(splits).strip()
-                if resolved_chunk:
-                    chunks.append(resolved_chunk)
-                    timestamps.append(timestamp_stack)
+        # Start a new chunk: record the snippet's exact start timestamp
+        if current_chunk_start is None:
+            try:
+                current_chunk_start = float(start)
+            except (ValueError, TypeError):
+                current_chunk_start = 0.0
 
-                chunk_stack = temp_chunk_stack.strip()
+        current_chunk_texts.append(text)
+        current_length += text_len + 1
 
-    # Append any remaining chunk stack so trailing transcript content is preserved
-    if chunk_stack.strip():
-        chunks.append(chunk_stack.strip())
-        timestamps.append(timestamp_stack)
+    # Append any remaining accumulated snippet(s)
+    if current_chunk_texts:
+        chunks.append(" ".join(current_chunk_texts))
+        timestamps.append(current_chunk_start if current_chunk_start is not None else 0.0)
 
-    logger.debug("Created %d chunks from %d transcript items", len(chunks), len(transcript_list))
+    logger.info("Created %d chunks with timestamps spanning %0.1fs to %0.1fs",
+                len(chunks), timestamps[0] if timestamps else 0.0, timestamps[-1] if timestamps else 0.0)
     return chunks, timestamps
 
 
 def chunk_by_sentences(text: str, max_chars: int = 100_000) -> list[str]:
     """Chunk text by sentence boundaries up to max_chars per chunk."""
-    sentences = sent_tokenize(text)
+    try:
+        sentences = sent_tokenize(text)
+    except Exception:
+        # Fallback to regex sentence splitting if nltk tokenizers are missing
+        sentences = re.split(r"(?<=[.!?])\s+", text)
+
     chunks: list[str] = []
     current_chunk = ""
 

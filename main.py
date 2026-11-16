@@ -30,6 +30,7 @@ if not groq_api_key or not gemini_api_key:
 from DataBases.VectorStore import VectorStore
 from utils.HelperFunctions import (
     create_chunks_with_timestamps,
+    format_timestamp,
     get_video_id,
     wave_bytesio,
 )
@@ -47,6 +48,7 @@ gemini_llm = GeminiLLM(gemini_api_key)
 with st.sidebar:
     st.subheader("Video Configuration")
     video_url = st.text_input("YouTube Video URL", placeholder="https://www.youtube.com/watch?v=...", key="video_url")
+    force_reprocess = st.checkbox("Re-index video (force refresh)", value=False, help="Check this to re-fetch transcript, re-chunk, and recalculate timestamps.")
 
     process_col, reset_col = st.columns([1, 1])
     with process_col:
@@ -90,13 +92,33 @@ with st.sidebar:
                     # Check if video was previously indexed
                     existing = st.session_state.vector_store.collection.get(
                         where={"youtube_id": video_id},
-                        limit=1,
+                        include=["metadatas"],
+                    )
+                    existing_ids = existing.get("ids", [])
+                    existing_metas = existing.get("metadatas", [])
+
+                    # Detect corrupted cache where multiple chunks all have start == 0.0
+                    has_corrupted_timestamps = (
+                        len(existing_ids) > 1
+                        and all(float(m.get("start", 0)) == 0.0 for m in existing_metas)
                     )
 
-                    if existing and existing.get("ids"):
+                    if existing_ids and not has_corrupted_timestamps and not force_reprocess:
                         st.write("Video transcript is already indexed in the vector database.")
                         logger.info("Video %s already indexed in ChromaDB", video_id)
                     else:
+                        if has_corrupted_timestamps:
+                            st.warning("Detected outdated 00:00 timestamps in cache. Purging and re-indexing...")
+                            logger.info("Purging corrupted video %s cache in ChromaDB", video_id)
+                            st.session_state.vector_store.delete_video(video_id)
+                            st.session_state.pop("summary", None)
+                            st.session_state.pop("chunks_for_summarization", None)
+                        elif force_reprocess and existing_ids:
+                            st.info("Force re-process requested. Purging existing cache...")
+                            st.session_state.vector_store.delete_video(video_id)
+                            st.session_state.pop("summary", None)
+                            st.session_state.pop("chunks_for_summarization", None)
+
                         st.write("Fetching video transcript...")
                         transcript_list = []
                         try:
@@ -190,15 +212,25 @@ if video_url and "video_id" in st.session_state and "vector_store" in st.session
             n_results=5,
         )
 
+        formatted_context_list = []
+        for idx, chunk in enumerate(related_chunks, start=1):
+            start_sec = int(chunk.get("start", 0))
+            ts = format_timestamp(start_sec)
+            url = f"https://www.youtube.com/watch?v={current_video_id}&t={start_sec}s"
+            formatted_context_list.append(
+                f"Source {idx} Citation: [{ts}]({url})\nContent: {chunk.get('text', '').strip()}"
+            )
+        context_str = "\n\n".join(formatted_context_list)
+
         system_instruction = f"""
 Instructions:
-- Be helpful and answer questions concisely. If you don't know the answer, say 'I don't know'.
-- Utilize the context provided for accurate and specific information.
-- Incorporate preexisting knowledge only to enhance clarity, but keep claims grounded in the context.
-- Cite your sources using markdown hyperlinks pointing to the video timestamp format: [MM:SS](https://www.youtube.com/watch?v={current_video_id}&t=start_seconds) where start_seconds is the integer start time.
+- Be helpful and answer questions concisely based on the context provided.
+- Ground all facts in the context. Every time you mention a fact or information from a source, cite it with the exact markdown link provided in the Source Citation header (e.g. [MM:SS](URL)).
+- Never fabricate timestamps. Use strictly the citation links provided in the Context headers.
+- If the context does not contain the answer, say 'I don't know'.
 
 Context:
-{related_chunks}
+{context_str}
 """
 
         with st.chat_message("model", avatar="🤖"):
@@ -212,6 +244,14 @@ Context:
                         query=prompt,
                     )
                     st.markdown(response_text)
+                    if related_chunks:
+                        with st.expander("📌 Referenced Timestamps & Sources", expanded=False):
+                            for idx, ch in enumerate(related_chunks, start=1):
+                                sec = int(ch.get("start", 0))
+                                ts = format_timestamp(sec)
+                                link = f"https://www.youtube.com/watch?v={current_video_id}&t={sec}s"
+                                st.markdown(f"- **Source {idx}** [{ts}]({link}): *\"{ch.get('text', '')[:120]}...\"*")
+
                     st.session_state.messages.append({"role": "model", "parts": [{"text": response_text}]})
                     logger.info("Answer generated successfully for query '%s'", prompt[:50])
                 except Exception as llm_err:

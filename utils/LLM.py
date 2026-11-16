@@ -69,9 +69,10 @@ class GroqLLM:
 class GeminiLLM:
     """Wrapper for Google Gemini models: Text Generation, TTS, and Multimodal Embeddings."""
 
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, embedding_dimension: int = 768):
         # Use v1beta endpoint to support system_instruction, multimodal gemini-embedding-2, and TTS speech_config
         self.client = genai.Client(api_key=api_key, http_options={"api_version": "v1beta"})
+        self.embedding_dimension = embedding_dimension
 
     def TextLLM(
         self,
@@ -133,7 +134,10 @@ class GeminiLLM:
             response = self.client.models.embed_content(
                 model="gemini-embedding-2",
                 contents=contents,
-                config=types.EmbedContentConfig(task_type="RETRIEVAL_DOCUMENT"),
+                config=types.EmbedContentConfig(
+                    task_type="RETRIEVAL_DOCUMENT",
+                    output_dimensionality=self.embedding_dimension,
+                ),
             )
             embeddings.extend([e.values for e in response.embeddings])
 
@@ -158,7 +162,10 @@ class GeminiLLM:
             response = self.client.models.embed_content(
                 model="gemini-embedding-2",
                 contents=contents,
-                config=types.EmbedContentConfig(task_type="RETRIEVAL_QUERY"),
+                config=types.EmbedContentConfig(
+                    task_type="RETRIEVAL_QUERY",
+                    output_dimensionality=self.embedding_dimension,
+                ),
             )
             embeddings.extend([e.values for e in response.embeddings])
 

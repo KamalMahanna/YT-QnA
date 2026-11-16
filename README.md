@@ -1,102 +1,202 @@
-# YouTube QnA
+# 🎬 YouTube QnA — Apple Fluid Intelligence
 
-This project is a Streamlit application that allows you to ask questions about YouTube videos. It downloads the transcript of a YouTube video, stores it in a vector database, and then uses a large language model to answer questions about the video.
+A full-stack, production-grade video conversational intelligence application. Built with a decoupled **FastAPI** backend and an **Apple Design Language** frontend, optimized to run within the free tier of **Render** with cloud vector caching on **Pinecone Serverless**.
 
-## How it Works
+---
 
-The application works as follows:
+## ✨ Features
 
-1. The user enters a YouTube video URL, a Groq API key, and a Gemini API key.
-2. The application extracts the video ID from the URL.
-3. The application downloads the transcript of the video using either the YouTube API or Whisper (via the Groq API).
-4. The application chunks the transcript into smaller pieces and stores them in a vector database using ChromaDB.
-5. The user asks a question about the video.
-6. The application retrieves the relevant transcript chunks from the vector database.
-7. The application uses a large language model (Gemini) to answer the question based on the retrieved transcript chunks.
-8. The application generates audio from the summary using Gemini LLM.
-9. The application displays the answer to the user.
+- **🍏 Apple Human Interface Design:**
+  - Dark pitch aesthetic with frosted Liquid Glass materials (`backdrop-filter: blur(24px)`).
+  - Native Apple system typography (SF Pro Text / Display).
+  - Instant `:active` direct-response feedback (`scale(0.97)` on pointer-down) with spring physics.
+- **⏱️ Synchronized Interactive Video Player:**
+  - Embedded YouTube IFrame player that scrubs to the exact second whenever you click any `[MM:SS]` citation pill in the chat or summary.
+- **⚡ Real-Time Streaming SSE Chat:**
+  - Token-by-token generation using Google Gemini 2.5 Flash.
+  - Conversational history persisted privately in client browser `localStorage`.
+- **🎙️ Executive Voice Summary & Audio Player:**
+  - Hierarchical map-reduce summarization with an Apple Podcasts-style floating player powered by Gemini TTS with playback speed toggles (`1x`, `1.25x`, `1.5x`, `2x`).
+- **🛡️ Concurrency & Single-Flight Mutex:**
+  - Built-in `asyncio` task lock coordinating simultaneous hits on the same video without API rate-limit exhaustion.
+- **🌲 Pinecone Serverless Universal Cache:**
+  - Fast vector search partitioned by `namespace=video_id` using 768-dimensional Matryoshka embeddings. Once a video is processed, it is cached for all users.
+- **☁️ Render Free-Tier Optimized:**
+  - Backend memory footprint `<50MB` RAM (safely within Render's 512MB cap).
+  - Ephemeral disk-safe architecture.
 
-## Directory Tree
+---
+
+## 🏛️ System Architecture
+
+```mermaid
+flowchart LR
+    subgraph Client ["Client Browser (Apple HIG UI)"]
+        UI["React 19 + Tailwind App"]
+        YT["YouTube IFrame Player"]
+        LS[("localStorage: Chat History")]
+    end
+
+    subgraph Backend ["Render Free Tier (FastAPI <50MB RAM)"]
+        API["FastAPI (Stateless REST & SSE)"]
+        Mutex["In-Memory Single-Flight Mutex"]
+        TranscriptSvc["Subtitles & Groq Whisper STT"]
+    end
+
+    subgraph Cloud ["External Cloud Services"]
+        Pinecone[("Pinecone Serverless (Vector Store)")]
+        Gemini["Google Gemini (Flash, Embeddings, TTS)"]
+    end
+
+    UI -- "1. Video URL" --> API
+    API <--> Mutex
+    Mutex -- "Fetch Transcripts" --> TranscriptSvc
+    TranscriptSvc --> Gemini
+    Gemini -- "768-dim Vectors" --> Pinecone
+
+    UI -- "2. Question + History" --> API
+    API -- "Retrieve Top Chunks" --> Pinecone
+    API -- "Stream Answer (SSE)" --> Gemini
+    Gemini -- "Tokens" --> UI
+
+    UI -- "3. Click [MM:SS] Citation" --> YT
+    UI -- "4. Save Chat" --> LS
+```
+
+---
+
+## 📁 Repository Structure
 
 ```
-.
-├── DataBases
-│   ├── __init__.py
-│   └── VectorStore.py
-├── Dockerfile
-├── LICENSE
-├── main.py
-├── notebooks
-│   └── test.ipynb
-├── requirements.txt
-├── utils
-│   ├── AudioDownloader.py
-│   ├── __init__.py
-│   ├── HelperFunctions.py
-│   ├── LLM.py
-│   ├── Summarizer.py
-│   └── Transcript.py
-└── .gitignore
+YT-QnA/
+├── backend/                       # Python Backend (FastAPI)
+│   ├── api/                       # REST endpoints, services, RAG engine
+│   │   ├── server.py              # FastAPI application & routes
+│   │   ├── services.py            # Video ingestion & single-flight lock
+│   │   └── chat_service.py        # Conversational RAG & SSE streaming
+│   ├── DataBases/                 # Vector Store abstractions
+│   │   └── PineconeStore.py       # Pinecone serverless store (namespace=video_id)
+│   ├── utils/                     # Transcription, Gemini LLM, Summarizer
+│   ├── tests/                     # 19 automated unit & integration tests
+│   ├── requirements.txt           # Python dependencies
+│   ├── Dockerfile                 # Container definition
+│   ├── streamlit_app.py           # Legacy Streamlit app (preserved)
+│   └── .env.example
+├── frontend/                      # Modern Apple HIG UI (React 19 + TypeScript + Vite)
+│   ├── src/
+│   │   ├── components/            # Navbar, YouTubePlayer, ChatView, AudioPlayer, SummaryView
+│   │   ├── App.tsx                # Master state, SSE streaming, localStorage sync
+│   │   ├── index.css              # Apple Liquid Glass & spring transitions
+│   │   └── types.ts               # TypeScript schemas
+│   ├── package.json
+│   └── vite.config.ts
+├── render.yaml                    # Render Blueprint (Backend Web Service + Static Site)
+├── plan.md                        # Architecture & Implementation Blueprint
+└── README.md
 ```
 
-## Tools and Technologies Used
+---
 
-* [Streamlit](https://streamlit.io/): A Python library for creating interactive web applications.
-* [ChromaDB](https://www.trychroma.com/): A vector database for storing and retrieving embeddings.
-* [Gemini API](https://ai.google.dev/): A large language model from Google AI.
-* [Groq API](https://console.groq.com/): An API for accessing Whisper for audio transcription.
-* [pytubefix](https://pytube.io/): A Python library for downloading YouTube videos.
-* [youtube-transcript-api](https://github.com/jdepoix/youtube-transcript-api): A Python library for retrieving YouTube transcripts.
-* [python-dotenv](https://github.com/theskumar/python-dotenv): A Python library for loading environment variables from a .env file.
-* [nltk](https://www.nltk.org/): A Python library for natural language processing.
-* [pydub](https://github.com/jiaaro/pydub): A Python library for manipulating audio files.
+## 🚀 Quickstart (Running Locally)
 
-## How to Run Locally
+### Prerequisites
+- **Python 3.11+**
+- **Node.js 18+** & npm
+- API Keys:
+  - **Google Gemini API Key:** [Google AI Studio](https://aistudio.google.com/apikey)
+  - **Pinecone API Key:** [Pinecone Console](https://app.pinecone.io/) (Free Starter tier, `us-east-1`)
+  - **Groq API Key (Optional fallback):** [Groq Console](https://console.groq.com/keys)
 
-1. Clone the repository:
+---
 
-   ```bash
-   git clone https://github.com/KamalMahanna/YT-QnA.git
-   cd YT-QnA
-   ```
+### 1. Setup Backend
 
-2. Set up your environment variables:
+```bash
+# Navigate to backend directory
+cd backend
 
-   Copy `.env.example` to `.env` and paste your API keys:
+# Create and activate virtual environment
+python3 -m venv .venv
+source .venv/bin/activate
 
-   ```bash
-   cp .env.example .env
-   ```
+# Install dependencies
+pip install -r requirements.txt
 
-   Open `.env` in a text editor and fill in your keys:
-   * **GROQ_API_KEY:** Get one from [Groq Console](https://console.groq.com/keys)
-   * **GEMINI_API_KEY:** Get one from [Google AI Studio](https://aistudio.google.com/apikey)
+# Configure environment variables
+cp .env.example .env
+```
 
-3. Install Docker:
+Edit `backend/.env` with your keys:
+```env
+GEMINI_API_KEY=your_gemini_key_here
+PINECONE_API_KEY=your_pinecone_key_here
+PINECONE_INDEX_NAME=yt-qna
+GROQ_API_KEY=your_groq_key_here
+```
 
-   Click [here](https://docs.docker.com/get-started/get-docker/) for the Docker installation page
+Run tests to verify everything is wired correctly:
+```bash
+python -m unittest discover tests
+```
 
-4. Build the Docker image:
+Start the FastAPI backend server:
+```bash
+uvicorn api.server:app --reload --port 8000
+```
+Backend API docs available at: `http://localhost:8000/docs`
 
-   ```bash
-   docker build --network host -t yt-qna .
-   ```
+---
 
-5. Run the Docker container:
+### 2. Setup Frontend
 
-   ```bash
-   docker run --network host --env-file .env -v database_volume:/DataBases/my_chroma_db yt-qna:latest
-   ```
+Open a new terminal window:
 
-6. Open the application in your browser:
+```bash
+# Navigate to frontend directory
+cd frontend
 
-   [http://0.0.0.0:8501/](http://0.0.0.0:8501/)
+# Install packages
+npm install
 
-## API Keys
+# Start Vite development server
+npm run dev
+```
 
-* **Groq API Key:** [https://console.groq.com/keys](https://console.groq.com/keys)
-* **Gemini API Key:** [https://aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+Open `http://localhost:5173` in your browser. The Vite dev server automatically proxies API requests to `http://localhost:8000`.
 
-## Hosted Version
+---
 
-[https://yt-qna.streamlit.app/](https://yt-qna.streamlit.app/)
+## ☁️ Deployment on Render
+
+This repository includes a [`render.yaml`](./render.yaml) blueprint that deploys:
+1. **`yt-qna-backend`** (Web Service, Free Tier, Python).
+2. **`yt-qna-frontend`** (Static Site, Free Tier, Global CDN with 0-second cold starts).
+
+### One-Click Blueprint Steps:
+1. Push this repository to GitHub.
+2. Go to your [Render Dashboard](https://dashboard.render.com/) and click **New > Blueprint**.
+3. Connect your repository. Render will automatically parse `render.yaml`.
+4. Fill in your environment variables:
+   - `GEMINI_API_KEY`
+   - `PINECONE_API_KEY`
+   - `GROQ_API_KEY`
+5. Click **Apply**. Both your backend and frontend will build and deploy automatically!
+
+---
+
+## 🔑 Environment Variables Reference
+
+| Variable | Required | Description |
+| :--- | :---: | :--- |
+| `GEMINI_API_KEY` | **Yes** | Google Gemini API key for embeddings, chat, and audio TTS. |
+| `PINECONE_API_KEY` | **Yes** | Pinecone API key for cloud vector storage. |
+| `PINECONE_INDEX_NAME` | No | Name of Pinecone index (default: `yt-qna`). Auto-created if missing. |
+| `PINECONE_CLOUD` | No | Cloud provider for index (default: `aws`). |
+| `PINECONE_REGION` | No | Region for index (default: `us-east-1` for free tier). |
+| `GROQ_API_KEY` | No | Optional Groq Whisper STT fallback for captionless videos. |
+
+---
+
+## 📄 License
+
+This project is licensed under the Apache 2.0 License - see the [LICENSE](./LICENSE) file for details.

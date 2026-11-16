@@ -7,3 +7,4 @@ Garbage
 DataBases/my_chroma_db
 DataBases/MongoDB.py
 test.py
+.agents/

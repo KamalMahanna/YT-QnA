@@ -1,121 +1,168 @@
-from groq import Groq
+import logging
+import os
+from typing import Any, Union
+
 from google import genai
 from google.genai import types
-import os
+from groq import Groq
+
+logger = logging.getLogger(__name__)
 
 
 class GroqLLM:
-    def __init__(self, api_key):
-        self.llm = Groq(api_key=api_key)
+    """Wrapper for Groq Audio transcription services."""
 
-    def AudioLLM(self, audio_paths, model_name="whisper-large-v3-turbo"):
-        self.audio_paths = audio_paths
-        self.model_name = model_name
-        self.transcription_lists = []
+    def __init__(self, api_key: str):
+        self.client = Groq(api_key=api_key)
 
-        self.previous_start_time = 0
-        for audio_path in self.audio_paths:
-            with open(audio_path, "rb") as file:
-                self.transcription = self.llm.audio.transcriptions.create(
-                    file=(audio_path, file.read()),
-                    language="en",
-                    model=self.model_name,
-                    response_format="verbose_json",
-                )
+    def AudioLLM(
+        self,
+        audio_paths: list[str],
+        model_name: str = "whisper-large-v3-turbo",
+    ) -> list[dict[str, Any]]:
+        """Transcribe a list of audio files and merge segment timestamps."""
+        all_segments: list[dict[str, Any]] = []
+        cumulative_start_time = 0.0
 
-            if os.path.exists(audio_path):
-                os.remove(audio_path)
+        for audio_path in audio_paths:
+            logger.info("Transcribing audio file: %s using model %s", audio_path, model_name)
+            try:
+                with open(audio_path, "rb") as file_handle:
+                    transcription = self.client.audio.transcriptions.create(
+                        file=(os.path.basename(audio_path), file_handle.read()),
+                        language="en",
+                        model=model_name,
+                        response_format="verbose_json",
+                    )
 
-            self.transcription_segments = self.transcription.segments
-            self.transcription_list = [
-                {
-                    "text": each_transcription_segment["text"].strip(),
-                    "start": each_transcription_segment["start"]
-                    + self.previous_start_time,
-                }
-                for each_transcription_segment in self.transcription_segments
-                if each_transcription_segment["text"].strip()
-            ]
-            self.transcription_lists.extend(self.transcription_list)
+                segments = transcription.segments or []
+                for seg in segments:
+                    text = seg.get("text", "").strip() if isinstance(seg, dict) else seg.text.strip()
+                    start = seg.get("start", 0.0) if isinstance(seg, dict) else seg.start
+                    if text:
+                        all_segments.append({
+                            "text": text,
+                            "start": float(start) + cumulative_start_time,
+                        })
 
-            self.previous_start_time = self.transcription_segments[-1]["start"]
+                if segments:
+                    last_seg = segments[-1]
+                    last_end = last_seg.get("end", 0.0) if isinstance(last_seg, dict) else getattr(last_seg, "end", 0.0)
+                    cumulative_start_time += float(last_end)
+            except Exception as e:
+                logger.exception("Error transcribing %s: %s", audio_path, e)
+                raise
+            finally:
+                if os.path.exists(audio_path):
+                    try:
+                        os.remove(audio_path)
+                    except OSError as err:
+                        logger.warning("Failed to remove temporary audio file %s: %s", audio_path, err)
 
-        return self.transcription_lists
+        logger.info("Transcription completed with %d total segments", len(all_segments))
+        return all_segments
+
+    # Alias for pythonic naming
+    transcribe_audio = AudioLLM
 
 
 class GeminiLLM:
-    def __init__(self, api_key):
-        self.llm = genai.Client(api_key=api_key)
+    """Wrapper for Google Gemini models: Text Generation, TTS, and Multimodal Embeddings."""
+
+    def __init__(self, api_key: str):
+        # Use v1beta endpoint to support system_instruction, multimodal gemini-embedding-2, and TTS speech_config
+        self.client = genai.Client(api_key=api_key, http_options={"api_version": "v1beta"})
 
     def TextLLM(
         self,
-        system_instruction,
-        history,
-        query,
-        model_name="gemini-flash-latest",
-    ):
-        self.history = history
-        self.system_instruction = system_instruction
-        self.model_name = model_name
-
-        self.model = self.llm.chats.create(
-            model=self.model_name,
+        system_instruction: str,
+        history: list[dict[str, Any]],
+        query: str,
+        model_name: str = "gemini-2.5-flash",
+    ) -> str:
+        """Generate conversational text response with given instructions and history."""
+        logger.debug("Generating response using %s (query length: %d chars)", model_name, len(query))
+        chat = self.client.chats.create(
+            model=model_name,
             config=types.GenerateContentConfig(
-                system_instruction=self.system_instruction
+                system_instruction=system_instruction,
             ),
-            history=self.history,
+            history=history,
         )
-        self.response = self.model.send_message(query)
-        return self.response.text
+        response = chat.send_message(query)
+        return response.text or ""
 
-    def TTS(self, texts):
-        self.response = self.llm.models.generate_content(
-            model="gemini-2.5-flash-preview-tts",
-            contents=f"Read aloud in a energetic and friendly tone: {texts}",
+    # Alias for pythonic naming
+    generate_text = TextLLM
+
+    def TTS(self, texts: str, voice_name: str = "Zephyr") -> bytes:
+        """Synthesize text into raw PCM audio bytes using Gemini TTS."""
+        logger.info("Synthesizing TTS audio (input length: %d chars, voice: %s)", len(texts), voice_name)
+        response = self.client.models.generate_content(
+            model="gemini-3.8-flash-tts",
+            contents=f"Read aloud in an energetic and friendly tone: {texts}",
             config=types.GenerateContentConfig(
                 response_modalities=["AUDIO"],
                 speech_config=types.SpeechConfig(
                     voice_config=types.VoiceConfig(
                         prebuilt_voice_config=types.PrebuiltVoiceConfig(
-                            voice_name="Zephyr",
+                            voice_name=voice_name,
                         )
                     )
                 ),
             ),
         )
-        return self.response.candidates[0].content.parts[0].inline_data.data
+        return response.candidates[0].content.parts[0].inline_data.data
 
-    def __call__(self, input):
-        self.input = input
+    def __call__(self, input: Union[str, list[str]]) -> list[list[float]]:
+        """Embed document texts for ChromaDB indexing using gemini-embedding-2."""
+        items = [input] if isinstance(input, str) else list(input)
+        if not items:
+            return []
 
-        self.embedding = self.llm.models.embed_content(
-            model="gemini-embedding-001",
-            contents=self.input,
-            config=types.EmbedContentConfig(task_type="RETRIEVAL_DOCUMENT"),
-        )
+        logger.debug("Embedding %d documents with gemini-embedding-2", len(items))
+        embeddings: list[list[float]] = []
+        batch_size = 50
 
-        return [each_embedding.values for each_embedding in self.embedding.embeddings]
+        for i in range(0, len(items), batch_size):
+            batch = items[i : i + batch_size]
+            contents = [
+                types.Content(parts=[types.Part.from_text(text=text)])
+                for text in batch
+            ]
+            response = self.client.models.embed_content(
+                model="gemini-embedding-2",
+                contents=contents,
+                config=types.EmbedContentConfig(task_type="RETRIEVAL_DOCUMENT"),
+            )
+            embeddings.extend([e.values for e in response.embeddings])
 
-    def embed_query(self, input):
-        self.query_input = input
+        return embeddings
 
-        self.embedding = self.llm.models.embed_content(
-            model="gemini-embedding-001",
-            contents=self.query_input,
-            config=types.EmbedContentConfig(task_type="RETRIEVAL_QUERY"),
-        )
+    def embed_query(self, input: Union[str, list[str]]) -> list[list[float]]:
+        """Embed search query texts using gemini-embedding-2."""
+        items = [input] if isinstance(input, str) else list(input)
+        if not items:
+            return []
 
-        return [each_embedding.values for each_embedding in self.embedding.embeddings]
+        logger.debug("Embedding %d query text(s) with gemini-embedding-2", len(items))
+        embeddings: list[list[float]] = []
+        batch_size = 50
 
-    def name(self):
+        for i in range(0, len(items), batch_size):
+            batch = items[i : i + batch_size]
+            contents = [
+                types.Content(parts=[types.Part.from_text(text=text)])
+                for text in batch
+            ]
+            response = self.client.models.embed_content(
+                model="gemini-embedding-2",
+                contents=contents,
+                config=types.EmbedContentConfig(task_type="RETRIEVAL_QUERY"),
+            )
+            embeddings.extend([e.values for e in response.embeddings])
+
+        return embeddings
+
+    def name(self) -> str:
         return "gemini_embedding"
-
-
-if __name__ == "__main__":
-    import os
-    from dotenv import load_dotenv
-
-    load_dotenv(dotenv_path="../.env")
-    api_key = os.getenv("GEMINI_API_KEY")
-    llm = GeminiLLM(api_key)
-    print(llm.TextLLM("answer shorltly", [], "Hello"))

@@ -1,39 +1,35 @@
+import logging
+from typing import Any
+
 from youtube_transcript_api import YouTubeTranscriptApi
+
 from .AudioDownloader import AudioDownloader
 from .LLM import GroqLLM
-import os
+
+logger = logging.getLogger(__name__)
 
 
 class Transcript:
-    def __init__(self):
-        pass
+    """Handles fetching YouTube transcripts via YouTube Transcript API with Whisper STT fallback."""
 
-    def with_whisper(self, api_key, video_id, model_name="whisper-large-v3-turbo"):
-        self.video_id = video_id
-        self.model_name = model_name
+    def with_youtube_api(self, video_id: str) -> list[dict[str, Any]]:
+        """Fetch transcript directly from YouTube using the official subtitles API."""
+        logger.info("Attempting transcript retrieval via YouTube Transcript API for %s", video_id)
+        transcript_api = YouTubeTranscriptApi()
+        fetched = transcript_api.fetch(video_id, languages=["en"])
+        results = [{"text": snippet.text, "start": float(snippet.start)} for snippet in fetched]
+        logger.info("Successfully fetched %d transcript segments via YouTube API", len(results))
+        return results
 
-        self.audio_downloader = AudioDownloader()
-        self.audio_paths = self.audio_downloader.download_audio(self.video_id)
-        self.llm = GroqLLM(api_key)
-        self.transcript_list = self.llm.AudioLLM(self.audio_paths, self.model_name)
-        return self.transcript_list
-
-    def with_youtube_api(self, video_id):
-        self.video_id = video_id
-        self.transcript_api = YouTubeTranscriptApi()
-        self.transcript_list = self.transcript_api.fetch(
-            self.video_id, languages=["en"]
-        )
-        return self.transcript_list
-
-
-if __name__ == "__main__":
-    transcript = Transcript()
-
-    # print(transcript.with_whisper("0zhPaRZev8w"))
-    print(transcript.with_whisper("2nNGN72eYiU"))
-
-    # if os.path.exists('/tmp/tmphr_7t9ae.mp4'):
-    #     print(transcript.with_whisper("/tmp/tmphr_7t9ae.mp4"))
-    # else:
-    #     print("Not exist")
+    def with_whisper(
+        self,
+        api_key: str,
+        video_id: str,
+        model_name: str = "whisper-large-v3-turbo",
+    ) -> list[dict[str, Any]]:
+        """Download audio and transcribe using Groq-hosted Whisper model."""
+        logger.info("Falling back to Whisper STT for video %s (model: %s)", video_id, model_name)
+        downloader = AudioDownloader()
+        audio_paths = downloader.download_audio(video_id)
+        groq_llm = GroqLLM(api_key)
+        return groq_llm.AudioLLM(audio_paths, model_name=model_name)

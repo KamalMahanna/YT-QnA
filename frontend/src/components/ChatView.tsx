@@ -109,8 +109,21 @@ export const ChatView: React.FC<ChatViewProps> = ({
         {isStreaming && (
           <div className="flex flex-col items-start">
             <div className="max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed bg-white/[0.05] border border-white/[0.08] text-zinc-200">
-              <MarkdownRenderer content={streamingTokens} onSeek={onSeek} />
-              <span className="inline-block w-1.5 h-4 ml-1 bg-blue-400 animate-pulse align-middle" />
+              {streamingTokens ? (
+                <>
+                  <MarkdownRenderer content={streamingTokens} onSeek={onSeek} />
+                  <span className="inline-block w-1.5 h-4 ml-1 bg-blue-400 animate-pulse align-middle" />
+                </>
+              ) : (
+                <div className="flex items-center gap-2.5 py-1 px-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-blue-400/80 animate-bounce [animation-delay:-0.3s]" />
+                    <span className="w-2 h-2 rounded-full bg-blue-400/80 animate-bounce [animation-delay:-0.15s]" />
+                    <span className="w-2 h-2 rounded-full bg-blue-400/80 animate-bounce" />
+                  </div>
+                  <span className="text-xs text-zinc-400 font-medium tracking-tight">Thinking...</span>
+                </div>
+              )}
             </div>
           </div>
         )}

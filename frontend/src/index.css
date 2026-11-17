@@ -18,16 +18,17 @@
   --pill-active-text: #000000;
 }
 
+/* Light Mode Monochrome Tokens */
 [data-theme="light"],
 .theme-light {
   color-scheme: light;
   --canvas-bg: #fafafa;
   --text-main: #121212;
-  --glass-bg: rgba(255, 255, 255, 0.88);
+  --glass-bg: rgba(255, 255, 255, 0.92);
   --glass-border: rgba(0, 0, 0, 0.08);
-  --card-bg: rgba(0, 0, 0, 0.02);
+  --card-bg: rgba(0, 0, 0, 0.025);
   --card-border: rgba(0, 0, 0, 0.07);
-  --pill-active-bg: #000000;
+  --pill-active-bg: #121212;
   --pill-active-text: #ffffff;
 }
 
@@ -67,6 +68,150 @@ button:active:not(:disabled),
   background: var(--pill-active-bg);
   color: var(--pill-active-text);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+}
+
+/* ========================================================
+   LIGHT MODE OVERRIDES FOR CRISP MONOCHROME LEGIBILITY
+   ======================================================== */
+[data-theme="light"],
+[data-theme="light"] body {
+  background-color: #fafafa !important;
+  color: #121212 !important;
+}
+
+/* 1. Core Typography: in light mode, text-white and light zinc become rich dark charcoal/black */
+[data-theme="light"] .text-white,
+[data-theme="light"] h1,
+[data-theme="light"] h2,
+[data-theme="light"] h3,
+[data-theme="light"] h4,
+[data-theme="light"] strong {
+  color: #121212 !important;
+}
+
+[data-theme="light"] .text-zinc-100 {
+  color: #18181b !important;
+}
+
+[data-theme="light"] .text-zinc-200 {
+  color: #27272a !important;
+}
+
+[data-theme="light"] .text-zinc-300 {
+  color: #3f3f46 !important;
+}
+
+[data-theme="light"] .text-zinc-400 {
+  color: #52525b !important;
+}
+
+[data-theme="light"] .text-zinc-500 {
+  color: #71717a !important;
+}
+
+[data-theme="light"] .hover\:text-white:hover {
+  color: #000000 !important;
+}
+
+[data-theme="light"] .group:hover .group-hover\:text-white {
+  color: #000000 !important;
+}
+
+[data-theme="light"] .group:hover .group-hover\:text-zinc-200 {
+  color: #18181b !important;
+}
+
+/* 2. Form Inputs in light mode */
+[data-theme="light"] input,
+[data-theme="light"] textarea {
+  color: #121212 !important;
+}
+
+[data-theme="light"] input::placeholder,
+[data-theme="light"] textarea::placeholder {
+  color: #71717a !important;
+}
+
+/* 3. Hero Headline Gradient in light mode */
+[data-theme="light"] .bg-clip-text {
+  color: #121212 !important;
+  -webkit-text-fill-color: #121212 !important;
+  background-image: none !important;
+}
+
+/* 4. Active buttons & pills: Inverted (pure black button with crisp white text) */
+[data-theme="light"] .bg-white.text-black,
+[data-theme="light"] .apple-pill-active,
+[data-theme="light"] button.apple-pill-active {
+  background-color: #121212 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .bg-white.text-black svg,
+[data-theme="light"] .apple-pill-active svg {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+}
+
+[data-theme="light"] .bg-white.text-black .text-black,
+[data-theme="light"] .apple-pill-active span {
+  color: #ffffff !important;
+}
+
+/* 5. Translucent background and card surfaces */
+[data-theme="light"] .bg-black {
+  background-color: #fafafa !important;
+}
+
+[data-theme="light"] .bg-black\/60,
+[data-theme="light"] .bg-black\/80 {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="light"] .bg-zinc-950,
+[data-theme="light"] .bg-zinc-950\/80,
+[data-theme="light"] .bg-zinc-950\/90 {
+  background-color: #ffffff !important;
+}
+
+[data-theme="light"] .bg-zinc-900,
+[data-theme="light"] .bg-zinc-900\/90,
+[data-theme="light"] .bg-zinc-900\/95 {
+  background-color: #f4f4f5 !important;
+}
+
+/* 6. Hairline borders in light mode */
+[data-theme="light"] [class*="border-white/"] {
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] [class*="bg-white/"] {
+  background-color: rgba(0, 0, 0, 0.035) !important;
+}
+
+[data-theme="light"] [class*="hover:bg-white/"]:hover {
+  background-color: rgba(0, 0, 0, 0.07) !important;
+}
+
+/* 7. Markdown Citation Pills in light mode */
+[data-theme="light"] a[href^="#t="] {
+  background-color: rgba(0, 0, 0, 0.06) !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
+  color: #121212 !important;
+}
+[data-theme="light"] a[href^="#t="]:hover {
+  background-color: rgba(0, 0, 0, 0.12) !important;
+}
+[data-theme="light"] a[href^="#t="] svg {
+  color: #121212 !important;
+  fill: #121212 !important;
+}
+
+/* 8. YouTube Video Player Frame: Must stay dark black */
+[data-theme="light"] .aspect-video,
+[data-theme="light"] .aspect-video div,
+[data-theme="light"] .aspect-video iframe {
+  background-color: #000000 !important;
 }
 
 /* Minimalist monochrome scrollbar */

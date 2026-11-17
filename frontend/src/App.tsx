@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Navbar } from './components/Navbar'
+import { Sidebar } from './components/Sidebar'
 import { HeroSection } from './components/HeroSection'
 import { StorylineSection } from './components/StorylineSection'
 import { YouTubePlayer } from './components/YouTubePlayer'
@@ -22,6 +23,18 @@ export const App: React.FC = () => {
   const [videoId, setVideoId] = useState<string | null>(null)
   const [forceReindex, setForceReindex] = useState(false)
   const [activeTab, setActiveTab] = useState<'timeline' | 'chat' | 'summary'>('timeline')
+
+  // Sidebar state & persistence
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
+    return localStorage.getItem('yt_sidebar_collapsed') === 'true'
+  })
+  const [recentVideos, setRecentVideos] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('yt_recent_videos') || '[]')
+    } catch {
+      return []
+    }
+  })
 
   // Backend connection & health
   const [backendStatus, setBackendStatus] = useState<'connected' | 'waking' | 'error'>('waking')
@@ -130,6 +143,14 @@ export const App: React.FC = () => {
     }
   }, [messages, videoId])
 
+  const saveRecentVideo = (vid: string) => {
+    setRecentVideos((prev) => {
+      const next = [vid, ...prev.filter((id) => id !== vid)].slice(0, 8)
+      localStorage.setItem('yt_recent_videos', JSON.stringify(next))
+      return next
+    })
+  }
+
   // Process video
   const handleProcess = async (force: boolean) => {
     if (!url.trim()) return
@@ -148,6 +169,7 @@ export const App: React.FC = () => {
 
       if (res.status === 200) {
         setVideoId(data.video_id)
+        saveRecentVideo(data.video_id)
         setVideoStatus({ status: 'ready', chunk_count: data.chunk_count })
         setIsProcessing(false)
       } else if (res.status === 202) {
@@ -173,6 +195,7 @@ export const App: React.FC = () => {
 
         if (data.status === 'ready') {
           clearInterval(pollInterval)
+          saveRecentVideo(vid)
           setVideoStatus({ status: 'ready', chunk_count: data.chunk_count })
           setIsProcessing(false)
         } else if (data.status === 'failed') {
@@ -328,36 +351,67 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black text-[#ededed] flex flex-col font-sans selection:bg-white/20 selection:text-white">
-      {/* 1. Sticky Apple Glass Navbar */}
-      <Navbar
-        url={url}
-        setUrl={setUrl}
-        onProcess={handleProcess}
-        isProcessing={isProcessing}
-        backendStatus={backendStatus}
-        forceReindex={forceReindex}
-        setForceReindex={setForceReindex}
+    <div className="min-h-screen bg-black text-[#ededed] flex font-sans selection:bg-white/20 selection:text-white">
+      {/* Minimizable Sidebar */}
+      <Sidebar
+        isCollapsed={isSidebarCollapsed}
+        setIsCollapsed={(val) => {
+          setIsSidebarCollapsed(val)
+          localStorage.setItem('yt_sidebar_collapsed', String(val))
+        }}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        videoId={videoId}
+        recentVideos={recentVideos}
+        onSelectVideo={(vid) => {
+          setVideoId(vid)
+          setUrl(`https://www.youtube.com/watch?v=${vid}`)
+          setVideoStatus({ status: 'ready' })
+        }}
       />
 
-      {/* 2. Editorial Hero Section */}
-      <HeroSection
-        url={url}
-        setUrl={setUrl}
-        onProcess={handleProcess}
-        isProcessing={isProcessing}
-        forceReindex={forceReindex}
-        setForceReindex={setForceReindex}
-      />
-
-      {/* 3. The 4-Act Storyline & Architecture Bento */}
-      <StorylineSection />
-
-      {/* 4. The Actual Product: Interactive Studio Workspace */}
-      <section
-        id="studio-workspace"
-        className="w-full max-w-7xl mx-auto px-3 sm:px-6 py-12 sm:py-16 scroll-mt-20 flex flex-col gap-6"
+      {/* Main Content Area pushed over by sidebar on desktop */}
+      <div
+        className={`flex-1 flex flex-col min-w-0 transition-[padding-left] duration-200 ease-out ${
+          isSidebarCollapsed ? 'md:pl-16' : 'md:pl-64'
+        }`}
       >
+        {/* 1. Sticky Apple Glass Navbar */}
+        <Navbar
+          url={url}
+          setUrl={setUrl}
+          onProcess={handleProcess}
+          isProcessing={isProcessing}
+          backendStatus={backendStatus}
+          forceReindex={forceReindex}
+          setForceReindex={setForceReindex}
+          onToggleSidebar={() => {
+            setIsSidebarCollapsed((prev) => {
+              const next = !prev
+              localStorage.setItem('yt_sidebar_collapsed', String(next))
+              return next
+            })
+          }}
+        />
+
+        {/* 2. Editorial Hero Section */}
+        <HeroSection
+          url={url}
+          setUrl={setUrl}
+          onProcess={handleProcess}
+          isProcessing={isProcessing}
+          forceReindex={forceReindex}
+          setForceReindex={setForceReindex}
+        />
+
+        {/* 3. The 4-Act Storyline & Architecture Bento */}
+        <StorylineSection />
+
+        {/* 4. The Actual Product: Interactive Studio Workspace */}
+        <section
+          id="studio-workspace"
+          className="w-full max-w-7xl mx-auto px-3 sm:px-6 py-12 sm:py-16 scroll-mt-20 flex flex-col gap-6"
+        >
         {/* Workspace Title & Live Status */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.08] pb-5">
           <div className="space-y-1">
@@ -541,7 +595,8 @@ export const App: React.FC = () => {
         <p className="text-[11px] text-zinc-600">Pure Monochrome • Apple Design Language • Studio Edition</p>
       </footer>
     </div>
-  )
+  </div>
+)
 }
 
 export default App

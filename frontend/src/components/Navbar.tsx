@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Sparkles, RefreshCw, ArrowRight, X } from 'lucide-react'
+import { Sparkles, RefreshCw, ArrowRight, X, PanelLeft } from 'lucide-react'
 
 interface NavbarProps {
   url: string
@@ -9,6 +9,7 @@ interface NavbarProps {
   backendStatus: 'connected' | 'waking' | 'error'
   forceReindex: boolean
   setForceReindex: (val: boolean) => void
+  onToggleSidebar?: () => void
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -19,6 +20,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   backendStatus,
   forceReindex,
   setForceReindex,
+  onToggleSidebar,
 }) => {
   const [isFocused, setIsFocused] = useState(false)
 
@@ -46,10 +48,21 @@ export const Navbar: React.FC<NavbarProps> = ({
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full px-3 sm:px-6 py-2.5 sm:py-3 apple-glass border-b border-white/[0.08]">
+    <header className="sticky top-0 z-40 w-full px-3 sm:px-6 py-2.5 sm:py-3 apple-glass border-b border-white/[0.08]">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 sm:gap-6">
         {/* Brand & Nav Anchors */}
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-3 sm:gap-6">
+          {onToggleSidebar && (
+            <button
+              type="button"
+              onClick={onToggleSidebar}
+              className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.06] active:scale-95 transition-all cursor-pointer"
+              title="Toggle Sidebar"
+            >
+              <PanelLeft className="w-4 h-4" />
+            </button>
+          )}
+
           <div
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             className="flex items-center gap-2.5 cursor-pointer group"

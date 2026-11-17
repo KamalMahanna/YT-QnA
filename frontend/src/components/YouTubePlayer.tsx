@@ -4,6 +4,7 @@ interface YouTubePlayerProps {
   videoId: string
   onPlayerReady?: (player: any) => void
   seekTimestamp?: number | null
+  onTimeUpdate?: (currentTime: number, isPlaying: boolean) => void
 }
 
 declare global {
@@ -17,9 +18,39 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
   videoId,
   onPlayerReady,
   seekTimestamp,
+  onTimeUpdate,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const playerRef = useRef<any>(null)
+  const timePollIntervalRef = useRef<any>(null)
+  const onTimeUpdateRef = useRef(onTimeUpdate)
+
+  useEffect(() => {
+    onTimeUpdateRef.current = onTimeUpdate
+  }, [onTimeUpdate])
+
+  const stopTimePolling = () => {
+    if (timePollIntervalRef.current) {
+      clearInterval(timePollIntervalRef.current)
+      timePollIntervalRef.current = null
+    }
+  }
+
+  const startTimePolling = () => {
+    stopTimePolling()
+    timePollIntervalRef.current = setInterval(() => {
+      if (playerRef.current && typeof playerRef.current.getCurrentTime === 'function') {
+        try {
+          const time = playerRef.current.getCurrentTime()
+          if (typeof time === 'number' && !isNaN(time)) {
+            onTimeUpdateRef.current?.(time, true)
+          }
+        } catch {
+          // ignore transient iframe access errors
+        }
+      }
+    }, 250)
+  }
 
   useEffect(() => {
     // Load YouTube Iframe API script if not present
@@ -33,9 +64,15 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
     const initPlayer = () => {
       if (!window.YT || !window.YT.Player || !containerRef.current) return
 
+      stopTimePolling()
+
       // Destroy old instance if any
       if (playerRef.current) {
-        playerRef.current.destroy()
+        try {
+          playerRef.current.destroy()
+        } catch {
+          // ignore
+        }
       }
 
       playerRef.current = new window.YT.Player(containerRef.current, {
@@ -49,6 +86,24 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
           onReady: (event: any) => {
             if (onPlayerReady) onPlayerReady(event.target)
           },
+          onStateChange: (event: any) => {
+            // 1: PLAYING, 2: PAUSED, 0: ENDED
+            if (event.data === 1) {
+              startTimePolling()
+            } else {
+              stopTimePolling()
+              if (playerRef.current && typeof playerRef.current.getCurrentTime === 'function') {
+                try {
+                  const time = playerRef.current.getCurrentTime()
+                  if (typeof time === 'number' && !isNaN(time)) {
+                    onTimeUpdateRef.current?.(time, false)
+                  }
+                } catch {
+                  // ignore
+                }
+              }
+            }
+          },
         },
       })
     }
@@ -60,6 +115,7 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
     }
 
     return () => {
+      stopTimePolling()
       if (playerRef.current && playerRef.current.destroy) {
         try {
           playerRef.current.destroy()
@@ -73,8 +129,13 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
   // Scrub when seekTimestamp prop updates
   useEffect(() => {
     if (seekTimestamp !== null && seekTimestamp !== undefined && playerRef.current && playerRef.current.seekTo) {
-      playerRef.current.seekTo(seekTimestamp, true)
-      playerRef.current.playVideo()
+      try {
+        playerRef.current.seekTo(seekTimestamp, true)
+        playerRef.current.playVideo()
+        onTimeUpdateRef.current?.(seekTimestamp, true)
+      } catch {
+        // ignore
+      }
     }
   }, [seekTimestamp])
 

@@ -4,7 +4,7 @@ import os
 from typing import Any
 
 from DataBases.PineconeStore import PineconeStore
-from utils.HelperFunctions import create_chunks_with_timestamps
+from utils.HelperFunctions import create_chunks_with_timestamps, format_timestamp
 from utils.Transcript import Transcript
 
 logger = logging.getLogger(__name__)
@@ -34,6 +34,8 @@ class VideoTaskCoordinator:
         self._statuses: dict[str, dict[str, Any]] = {}
         # In-memory chunk cache for fast summary retrieval
         self._chunks_cache: dict[str, list[str]] = {}
+        # In-memory timeline segments cache
+        self._timeline_cache: dict[str, list[dict[str, Any]]] = {}
 
     def _get_lock(self, video_id: str) -> asyncio.Lock:
         if video_id not in self._locks:
@@ -115,8 +117,17 @@ class VideoTaskCoordinator:
                     await asyncio.to_thread(self.store.delete_video, video_id)
                 await asyncio.to_thread(self.store.add_documents, chunks, timestamps, video_id)
 
-                # 4. Cache chunks for summarization
+                # 4. Cache chunks and timeline for summarization and scrollytelling
                 self._chunks_cache[video_id] = chunks
+                self._timeline_cache[video_id] = [
+                    {
+                        "chunk_id": f"{video_id}#chunk_{i}",
+                        "start": float(ts),
+                        "timestamp": format_timestamp(float(ts)),
+                        "text": doc,
+                    }
+                    for i, (doc, ts) in enumerate(zip(chunks, timestamps))
+                ]
                 result = {
                     "status": STATUS_READY,
                     "video_id": video_id,
@@ -146,5 +157,18 @@ class VideoTaskCoordinator:
             if chunks:
                 self._chunks_cache[video_id] = chunks
                 return chunks
+
+        return []
+
+    def get_video_timeline(self, video_id: str) -> list[dict[str, Any]]:
+        """Retrieve chronological timeline beats from memory cache or PineconeStore."""
+        if video_id in self._timeline_cache and self._timeline_cache[video_id]:
+            return self._timeline_cache[video_id]
+
+        if self.store and hasattr(self.store, "get_video_timeline"):
+            timeline = self.store.get_video_timeline(video_id)
+            if timeline:
+                self._timeline_cache[video_id] = timeline
+                return timeline
 
         return []

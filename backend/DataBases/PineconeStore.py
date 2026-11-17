@@ -152,6 +152,34 @@ class PineconeStore:
         )
         return [(getattr(m, "metadata", {}) or {}).get("text", "") for m in sorted_matches]
 
+    def get_video_timeline(self, video_id: str, limit: int = 150) -> list[dict[str, Any]]:
+        """Fetch chronological timeline segments with start time and text."""
+        from utils.HelperFunctions import format_timestamp
+
+        dummy_vector = [0.0] * self.dimension
+        res = self.index.query(
+            vector=dummy_vector,
+            top_k=limit,
+            namespace=video_id,
+            include_metadata=True,
+        )
+        matches = getattr(res, "matches", []) or []
+        sorted_matches = sorted(
+            matches,
+            key=lambda m: float((getattr(m, "metadata", {}) or {}).get("start", 0)),
+        )
+        timeline = []
+        for m in sorted_matches:
+            meta = getattr(m, "metadata", {}) or {}
+            sec = float(meta.get("start", 0))
+            timeline.append({
+                "chunk_id": getattr(m, "id", ""),
+                "start": sec,
+                "timestamp": format_timestamp(sec),
+                "text": meta.get("text", ""),
+            })
+        return timeline
+
     def delete_video(self, video_id: str) -> None:
         """Delete all vectors in namespace=video_id."""
         logger.info("Deleting namespace for video %s", video_id)

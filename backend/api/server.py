@@ -151,6 +151,12 @@ def create_app(
         status_info = app.state.coordinator.get_status(video_id)
         return status_info
 
+    @app.get("/api/video/timeline/{video_id}")
+    async def get_video_timeline(video_id: str):
+        """Retrieve chronological transcript timeline beats for scroll-driven synchronization."""
+        timeline = app.state.coordinator.get_video_timeline(video_id)
+        return {"video_id": video_id, "timeline": timeline}
+
     @app.post("/api/chat/stream")
     async def chat_stream(req: ChatStreamRequest):
         """Stream conversational RAG response via Server-Sent Events (SSE)."""

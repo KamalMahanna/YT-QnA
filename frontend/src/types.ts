@@ -21,3 +21,10 @@ export interface VideoStatus {
   chunk_count?: number
   cached?: boolean
 }
+
+export interface TimelineBeat {
+  chunk_id: string
+  start: number
+  timestamp: string
+  text: string
+}

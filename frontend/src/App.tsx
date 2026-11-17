@@ -3,24 +3,37 @@ import { Navbar } from './components/Navbar'
 import { YouTubePlayer } from './components/YouTubePlayer'
 import { ChatView } from './components/ChatView'
 import { SummaryView } from './components/SummaryView'
-import type { ChatMessage, VideoStatus } from './types'
-import { MessageSquare, FileText, AlertCircle, Sparkles } from 'lucide-react'
+import { TimelineStream } from './components/TimelineStream'
+import type { ChatMessage, VideoStatus, TimelineBeat } from './types'
+import { MessageSquare, FileText, AlertCircle, Sparkles, Clock } from 'lucide-react'
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || ''
+
+const formatSeconds = (sec: number) => {
+  const m = Math.floor(sec / 60)
+  const s = Math.floor(sec % 60)
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+}
 
 export const App: React.FC = () => {
   const [url, setUrl] = useState('')
   const [videoId, setVideoId] = useState<string | null>(null)
   const [forceReindex, setForceReindex] = useState(false)
-  const [activeTab, setActiveTab] = useState<'chat' | 'summary'>('chat')
+  const [activeTab, setActiveTab] = useState<'timeline' | 'chat' | 'summary'>('timeline')
 
   // Backend connection & health
   const [backendStatus, setBackendStatus] = useState<'connected' | 'waking' | 'error'>('waking')
   const [videoStatus, setVideoStatus] = useState<VideoStatus | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
 
-  // YouTube seeking
+  // YouTube playhead sync & seeking
+  const [currentTime, setCurrentTime] = useState<number>(0)
+  const [isPlaying, setIsPlaying] = useState<boolean>(false)
   const [seekTimestamp, setSeekTimestamp] = useState<number | null>(null)
+
+  // Timeline beats state
+  const [timeline, setTimeline] = useState<TimelineBeat[]>([])
+  const [isLoadingTimeline, setIsLoadingTimeline] = useState(false)
 
   // Chat state & persistence
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -62,6 +75,10 @@ export const App: React.FC = () => {
   useEffect(() => {
     if (!videoId) return
 
+    setTimeline([])
+    setCurrentTime(0)
+    setIsPlaying(false)
+
     const storedChat = localStorage.getItem(`yt_chat_${videoId}`)
     if (storedChat) {
       try {
@@ -81,6 +98,28 @@ export const App: React.FC = () => {
     }
     setAudioBlob(null)
   }, [videoId])
+
+  // Fetch chronological timeline when video is ready
+  useEffect(() => {
+    if (!videoId || videoStatus?.status !== 'ready') return
+
+    const fetchTimeline = async () => {
+      setIsLoadingTimeline(true)
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/video/timeline/${videoId}`)
+        if (res.ok) {
+          const data = await res.json()
+          setTimeline(data.timeline || [])
+        }
+      } catch {
+        // ignore
+      } finally {
+        setIsLoadingTimeline(false)
+      }
+    }
+
+    fetchTimeline()
+  }, [videoId, videoStatus?.status])
 
   // Save messages to localStorage
   useEffect(() => {
@@ -340,12 +379,23 @@ export const App: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-8 items-start">
             {/* Left Column: Synchronized YouTube Player (Sticky on Desktop) */}
             <div className="lg:col-span-5 xl:col-span-5 lg:sticky lg:top-24 flex flex-col gap-3.5">
-              <YouTubePlayer videoId={videoId} seekTimestamp={seekTimestamp} />
+              <YouTubePlayer
+                videoId={videoId}
+                seekTimestamp={seekTimestamp}
+                onTimeUpdate={(time, playing) => {
+                  setCurrentTime(time)
+                  setIsPlaying(playing)
+                }}
+              />
 
               <div className="p-3 sm:p-4 rounded-2xl apple-glass-card text-xs text-zinc-400 flex items-center justify-between">
-                <span>Video ID: <span className="font-mono text-zinc-200">{videoId}</span></span>
+                <div className="flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${isPlaying ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)] animate-pulse' : 'bg-zinc-600'}`} />
+                  <span className="font-mono text-zinc-200">{formatSeconds(currentTime)}</span>
+                </div>
+                <span>ID: <span className="font-mono text-zinc-200">{videoId}</span></span>
                 {videoStatus?.chunk_count && (
-                  <span>{videoStatus.chunk_count} chunks indexed</span>
+                  <span className="hidden sm:inline">{videoStatus.chunk_count} beats</span>
                 )}
               </div>
             </div>
@@ -354,6 +404,17 @@ export const App: React.FC = () => {
             <div className="lg:col-span-7 xl:col-span-7 flex flex-col gap-4">
               {/* Segmented Pill Tabs */}
               <div className="flex p-1 rounded-full bg-zinc-950 border border-white/[0.08] w-fit">
+                <button
+                  onClick={() => setActiveTab('timeline')}
+                  className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 rounded-full text-xs font-medium transition-transform duration-100 ${
+                    activeTab === 'timeline'
+                      ? 'apple-pill-active'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>Storyline Beats</span>
+                </button>
                 <button
                   onClick={() => setActiveTab('chat')}
                   className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 rounded-full text-xs font-medium transition-transform duration-100 ${
@@ -379,6 +440,16 @@ export const App: React.FC = () => {
               </div>
 
               {/* Tab Panes */}
+              {activeTab === 'timeline' && (
+                <TimelineStream
+                  timeline={timeline}
+                  currentTime={currentTime}
+                  isPlaying={isPlaying}
+                  onSeek={handleSeek}
+                  isLoading={isLoadingTimeline}
+                />
+              )}
+
               {activeTab === 'chat' && (
                 <ChatView
                   messages={messages}

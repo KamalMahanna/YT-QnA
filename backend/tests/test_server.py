@@ -73,6 +73,18 @@ class TestServerEndpoints(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["status"], STATUS_READY)
 
+    def test_get_video_timeline(self):
+        self.mock_coordinator.get_video_timeline.return_value = [
+            {"chunk_id": "chunk_0", "start": 0.0, "timestamp": "00:00", "text": "Intro"}
+        ]
+
+        response = self.client.get("/api/video/timeline/abc12345678")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["video_id"], "abc12345678")
+        self.assertEqual(len(data["timeline"]), 1)
+        self.assertEqual(data["timeline"][0]["timestamp"], "00:00")
+
     def test_chat_stream(self):
         async def fake_stream(*args, **kwargs):
             yield 'data: {"type": "sources", "sources": []}\n\n'

@@ -24,6 +24,28 @@ export const App: React.FC = () => {
   const [forceReindex, setForceReindex] = useState(false)
   const [activeTab, setActiveTab] = useState<'timeline' | 'chat' | 'summary'>('timeline')
 
+  // Theme state & persistence
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    return (localStorage.getItem('yt_theme') as 'dark' | 'light') || 'dark'
+  })
+
+  // Apply theme to document element
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+    if (theme === 'light') {
+      document.documentElement.classList.add('theme-light')
+      document.documentElement.classList.remove('dark')
+    } else {
+      document.documentElement.classList.remove('theme-light')
+      document.documentElement.classList.add('dark')
+    }
+    localStorage.setItem('yt_theme', theme)
+  }, [theme])
+
+  const handleToggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'))
+  }
+
   // Sidebar state & persistence
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
     return localStorage.getItem('yt_sidebar_collapsed') === 'true'
@@ -351,7 +373,13 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black text-[#ededed] flex font-sans selection:bg-white/20 selection:text-white">
+    <div
+      className={`min-h-screen flex font-sans transition-colors duration-200 ${
+        theme === 'light'
+          ? 'bg-[#fafafa] text-[#121212] selection:bg-black/10 selection:text-black'
+          : 'bg-black text-[#ededed] selection:bg-white/20 selection:text-white'
+      }`}
+    >
       {/* Minimizable Sidebar */}
       <Sidebar
         isCollapsed={isSidebarCollapsed}
@@ -368,6 +396,8 @@ export const App: React.FC = () => {
           setUrl(`https://www.youtube.com/watch?v=${vid}`)
           setVideoStatus({ status: 'ready' })
         }}
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
       />
 
       {/* Main Content Area pushed over by sidebar on desktop */}
@@ -576,7 +606,13 @@ export const App: React.FC = () => {
       </section>
 
       {/* 5. Minimalist Monochrome Studio Footer */}
-      <footer className="w-full border-t border-white/[0.08] py-8 sm:py-12 mt-12 bg-black text-center text-xs text-zinc-500 font-mono space-y-3">
+      <footer
+        className={`w-full border-t py-8 sm:py-12 mt-12 text-center text-xs font-mono space-y-3 transition-colors ${
+          theme === 'light'
+            ? 'border-black/[0.08] bg-[#fafafa] text-zinc-600'
+            : 'border-white/[0.08] bg-black text-zinc-500'
+        }`}
+      >
         <div className="flex items-center justify-center gap-6 text-zinc-400">
           <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="hover:text-white transition-colors cursor-pointer">
             Top

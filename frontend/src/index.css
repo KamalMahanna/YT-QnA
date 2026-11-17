@@ -7,12 +7,35 @@
   color-scheme: dark;
   --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-snappy: cubic-bezier(0.2, 0, 0, 1);
+
+  --canvas-bg: #000000;
+  --text-main: #ededed;
+  --glass-bg: rgba(10, 10, 12, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --card-bg: rgba(255, 255, 255, 0.025);
+  --card-border: rgba(255, 255, 255, 0.07);
+  --pill-active-bg: #ffffff;
+  --pill-active-text: #000000;
+}
+
+[data-theme="light"],
+.theme-light {
+  color-scheme: light;
+  --canvas-bg: #fafafa;
+  --text-main: #121212;
+  --glass-bg: rgba(255, 255, 255, 0.88);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --card-bg: rgba(0, 0, 0, 0.02);
+  --card-border: rgba(0, 0, 0, 0.07);
+  --pill-active-bg: #000000;
+  --pill-active-text: #ffffff;
 }
 
 body {
   margin: 0;
-  background-color: #000000;
-  color: #ededed;
+  background-color: var(--canvas-bg);
+  color: var(--text-main);
+  transition: background-color 200ms ease, color 200ms ease;
   overflow-x: hidden;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
@@ -25,37 +48,25 @@ button:active:not(:disabled),
   transition: transform 100ms var(--ease-snappy);
 }
 
-/* Subtle border transitions without reflow */
-.border-subtle {
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
 /* Monochrome Frosted Glass */
 .apple-glass {
-  background: rgba(10, 10, 12, 0.8);
+  background: var(--glass-bg);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--glass-border);
 }
 
 .apple-glass-card {
-  background: rgba(255, 255, 255, 0.025);
+  background: var(--card-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-}
-
-.apple-glass-elevated {
-  background: rgba(24, 24, 27, 0.6);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--card-border);
 }
 
 .apple-pill-active {
-  background: #ffffff;
-  color: #000000;
-  box-shadow: 0 2px 10px rgba(255, 255, 255, 0.15);
+  background: var(--pill-active-bg);
+  color: var(--pill-active-text);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
 }
 
 /* Minimalist monochrome scrollbar */
@@ -67,9 +78,9 @@ button:active:not(:disabled),
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(125, 125, 125, 0.25);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(125, 125, 125, 0.4);
 }

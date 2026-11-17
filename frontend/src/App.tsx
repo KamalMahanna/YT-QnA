@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { Navbar } from './components/Navbar'
+import { HeroSection } from './components/HeroSection'
+import { StorylineSection } from './components/StorylineSection'
 import { YouTubePlayer } from './components/YouTubePlayer'
 import { ChatView } from './components/ChatView'
 import { SummaryView } from './components/SummaryView'
 import { TimelineStream } from './components/TimelineStream'
 import type { ChatMessage, VideoStatus, TimelineBeat } from './types'
-import { MessageSquare, FileText, AlertCircle, Sparkles, Clock } from 'lucide-react'
+import { MessageSquare, FileText, AlertCircle, Sparkles, Clock, LayoutGrid } from 'lucide-react'
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || ''
 
@@ -327,7 +329,7 @@ export const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-black text-[#ededed] flex flex-col font-sans selection:bg-white/20 selection:text-white">
-      {/* Top Navigation */}
+      {/* 1. Sticky Apple Glass Navbar */}
       <Navbar
         url={url}
         setUrl={setUrl}
@@ -338,8 +340,48 @@ export const App: React.FC = () => {
         setForceReindex={setForceReindex}
       />
 
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 flex flex-col gap-4 sm:gap-6">
+      {/* 2. Editorial Hero Section */}
+      <HeroSection
+        url={url}
+        setUrl={setUrl}
+        onProcess={handleProcess}
+        isProcessing={isProcessing}
+        forceReindex={forceReindex}
+        setForceReindex={setForceReindex}
+      />
+
+      {/* 3. The 4-Act Storyline & Architecture Bento */}
+      <StorylineSection />
+
+      {/* 4. The Actual Product: Interactive Studio Workspace */}
+      <section
+        id="studio-workspace"
+        className="w-full max-w-7xl mx-auto px-3 sm:px-6 py-12 sm:py-16 scroll-mt-20 flex flex-col gap-6"
+      >
+        {/* Workspace Title & Live Status */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.08] pb-5">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <LayoutGrid className="w-4 h-4 text-zinc-400" />
+              <span className="text-xs font-mono tracking-widest text-zinc-400 uppercase">
+                Interactive Workspace
+              </span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+              Studio Environment
+            </h2>
+          </div>
+
+          {videoId && (
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.08] text-xs font-mono text-zinc-300">
+                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                <span>Video: {videoId}</span>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Error notification if video processing failed */}
         {videoStatus?.status === 'failed' && (
           <div className="flex items-center gap-3 p-3.5 sm:p-4 rounded-2xl bg-zinc-900/90 border border-white/15 text-zinc-200 text-sm shadow-lg">
@@ -350,9 +392,9 @@ export const App: React.FC = () => {
 
         {/* Video Processing State Banner */}
         {isProcessing && (
-          <div className="flex items-center justify-between p-3.5 sm:p-4 rounded-2xl apple-glass border border-white/20 bg-white/[0.02]">
-            <div className="flex items-center gap-3">
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin shrink-0" />
+          <div className="flex items-center justify-between p-4 sm:p-5 rounded-2xl apple-glass border border-white/20 bg-white/[0.02]">
+            <div className="flex items-center gap-3.5">
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin shrink-0" />
               <div>
                 <p className="text-sm font-medium text-white">Extracting & indexing transcript...</p>
                 <p className="text-xs text-zinc-400">Partitioning Pinecone vectors & caching chunks</p>
@@ -361,15 +403,17 @@ export const App: React.FC = () => {
           </div>
         )}
 
-        {/* Empty State when no video is loaded yet */}
+        {/* Studio Empty State when no video is loaded yet */}
         {!videoId && !isProcessing && (
-          <div className="flex-1 flex flex-col items-center justify-center min-h-[450px] text-center gap-4 p-6 sm:p-8">
+          <div className="p-8 sm:p-16 rounded-3xl apple-glass-card border border-white/[0.08] flex flex-col items-center justify-center text-center gap-4">
             <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-3xl bg-zinc-900 border border-white/10 flex items-center justify-center shadow-2xl">
               <Sparkles className="w-7 h-7 sm:w-8 sm:h-8 text-zinc-300" />
             </div>
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white">Experience Video Intelligence</h2>
+            <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
+              Studio Awaiting Video Stream
+            </h3>
             <p className="text-xs sm:text-sm text-zinc-400 max-w-md leading-relaxed">
-              Paste any YouTube link to extract transcripts, generate executive voice summaries, and chat with grounded timeline citations.
+              Paste any YouTube lecture link in the top bar or select one of the curated lectures above to load the synchronized playhead, transcript beats, and conversational intelligence.
             </p>
           </div>
         )}
@@ -475,7 +519,27 @@ export const App: React.FC = () => {
             </div>
           </div>
         )}
-      </main>
+      </section>
+
+      {/* 5. Minimalist Monochrome Studio Footer */}
+      <footer className="w-full border-t border-white/[0.08] py-8 sm:py-12 mt-12 bg-black text-center text-xs text-zinc-500 font-mono space-y-3">
+        <div className="flex items-center justify-center gap-6 text-zinc-400">
+          <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="hover:text-white transition-colors cursor-pointer">
+            Top
+          </button>
+          <button onClick={() => document.getElementById('storyline')?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-white transition-colors cursor-pointer">
+            Storyline
+          </button>
+          <button onClick={() => document.getElementById('architecture')?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-white transition-colors cursor-pointer">
+            Architecture
+          </button>
+          <button onClick={() => document.getElementById('studio-workspace')?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-white transition-colors cursor-pointer">
+            Studio
+          </button>
+        </div>
+        <p>Engineered with FastAPI • Pinecone Serverless • Gemini 2.5 • React 19 • Tailwind 4</p>
+        <p className="text-[11px] text-zinc-600">Pure Monochrome • Apple Design Language • Studio Edition</p>
+      </footer>
     </div>
   )
 }

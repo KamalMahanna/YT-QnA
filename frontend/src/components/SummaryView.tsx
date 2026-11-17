@@ -37,7 +37,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
       <div className="p-6 rounded-2xl apple-glass-card border border-white/[0.08] relative">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-amber-400" />
+            <Sparkles className="w-4 h-4 text-zinc-400" />
             <h2 className="text-sm font-semibold text-white tracking-tight">Executive Summary</h2>
           </div>
 

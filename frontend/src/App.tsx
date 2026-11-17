@@ -287,7 +287,7 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black text-[#f5f5f7] flex flex-col font-sans selection:bg-blue-500/30">
+    <div className="min-h-screen bg-black text-[#ededed] flex flex-col font-sans selection:bg-white/20 selection:text-white">
       {/* Top Navigation */}
       <Navbar
         url={url}
@@ -300,20 +300,20 @@ export const App: React.FC = () => {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col gap-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 flex flex-col gap-4 sm:gap-6">
         {/* Error notification if video processing failed */}
         {videoStatus?.status === 'failed' && (
-          <div className="flex items-center gap-2 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm">
-            <AlertCircle className="w-5 h-5 shrink-0" />
-            <span>{videoStatus.error || 'Failed to process video.'}</span>
+          <div className="flex items-center gap-3 p-3.5 sm:p-4 rounded-2xl bg-zinc-900/90 border border-white/15 text-zinc-200 text-sm shadow-lg">
+            <AlertCircle className="w-5 h-5 text-zinc-400 shrink-0" />
+            <span className="leading-snug">{videoStatus.error || 'Failed to process video.'}</span>
           </div>
         )}
 
         {/* Video Processing State Banner */}
         {isProcessing && (
-          <div className="flex items-center justify-between p-4 rounded-2xl apple-glass border border-blue-500/30 bg-blue-500/5">
+          <div className="flex items-center justify-between p-3.5 sm:p-4 rounded-2xl apple-glass border border-white/20 bg-white/[0.02]">
             <div className="flex items-center gap-3">
-              <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin shrink-0" />
               <div>
                 <p className="text-sm font-medium text-white">Extracting & indexing transcript...</p>
                 <p className="text-xs text-zinc-400">Partitioning Pinecone vectors & caching chunks</p>
@@ -324,39 +324,39 @@ export const App: React.FC = () => {
 
         {/* Empty State when no video is loaded yet */}
         {!videoId && !isProcessing && (
-          <div className="flex-1 flex flex-col items-center justify-center min-h-[500px] text-center gap-4 p-8">
-            <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-zinc-800 to-zinc-900 border border-white/10 flex items-center justify-center shadow-2xl">
-              <Sparkles className="w-8 h-8 text-white/80" />
+          <div className="flex-1 flex flex-col items-center justify-center min-h-[450px] text-center gap-4 p-6 sm:p-8">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-3xl bg-zinc-900 border border-white/10 flex items-center justify-center shadow-2xl">
+              <Sparkles className="w-7 h-7 sm:w-8 sm:h-8 text-zinc-300" />
             </div>
-            <h2 className="text-2xl font-bold tracking-tight text-white">Experience Video Intelligence</h2>
-            <p className="text-sm text-zinc-400 max-w-md">
-              Paste any YouTube video link to extract transcripts, generate executive voice summaries, and chat with grounded timestamp citations.
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white">Experience Video Intelligence</h2>
+            <p className="text-xs sm:text-sm text-zinc-400 max-w-md leading-relaxed">
+              Paste any YouTube link to extract transcripts, generate executive voice summaries, and chat with grounded timeline citations.
             </p>
           </div>
         )}
 
-        {/* Loaded Video View: Split Layout */}
+        {/* Loaded Video View: Responsive Split Layout */}
         {videoId && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            {/* Left Column: Synchronized YouTube Player */}
-            <div className="lg:col-span-6 flex flex-col gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-8 items-start">
+            {/* Left Column: Synchronized YouTube Player (Sticky on Desktop) */}
+            <div className="lg:col-span-5 xl:col-span-5 lg:sticky lg:top-24 flex flex-col gap-3.5">
               <YouTubePlayer videoId={videoId} seekTimestamp={seekTimestamp} />
 
-              <div className="p-4 rounded-2xl apple-glass-card text-xs text-zinc-400 flex items-center justify-between">
+              <div className="p-3 sm:p-4 rounded-2xl apple-glass-card text-xs text-zinc-400 flex items-center justify-between">
                 <span>Video ID: <span className="font-mono text-zinc-200">{videoId}</span></span>
                 {videoStatus?.chunk_count && (
-                  <span>{videoStatus.chunk_count} searchable chunks indexed</span>
+                  <span>{videoStatus.chunk_count} chunks indexed</span>
                 )}
               </div>
             </div>
 
             {/* Right Column: Apple Segmented Tabs & Content */}
-            <div className="lg:col-span-6 flex flex-col gap-4">
+            <div className="lg:col-span-7 xl:col-span-7 flex flex-col gap-4">
               {/* Segmented Pill Tabs */}
-              <div className="flex p-1 rounded-full bg-zinc-900 border border-white/[0.08] w-fit">
+              <div className="flex p-1 rounded-full bg-zinc-950 border border-white/[0.08] w-fit">
                 <button
                   onClick={() => setActiveTab('chat')}
-                  className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
+                  className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 rounded-full text-xs font-medium transition-transform duration-100 ${
                     activeTab === 'chat'
                       ? 'apple-pill-active'
                       : 'text-zinc-400 hover:text-white'
@@ -367,7 +367,7 @@ export const App: React.FC = () => {
                 </button>
                 <button
                   onClick={() => setActiveTab('summary')}
-                  className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
+                  className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 rounded-full text-xs font-medium transition-transform duration-100 ${
                     activeTab === 'summary'
                       ? 'apple-pill-active'
                       : 'text-zinc-400 hover:text-white'

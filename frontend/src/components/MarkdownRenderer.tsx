@@ -32,7 +32,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   const processedContent = formatTimestampsToLinks(content)
 
   return (
-    <div className={`text-sm leading-relaxed text-zinc-200 ${className}`}>
+    <div className={`text-sm leading-relaxed text-zinc-300 font-normal ${className}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
@@ -47,10 +47,10 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
                     e.stopPropagation()
                     onSeek(seconds)
                   }}
-                  className="inline-flex items-center gap-1 mx-1 px-2 py-0.5 rounded-full bg-blue-500/15 hover:bg-blue-500/25 border border-blue-400/30 text-blue-300 text-[11px] font-mono font-medium align-middle active:scale-95 transition-all cursor-pointer select-none"
+                  className="inline-flex items-center gap-1 mx-1 px-2.5 py-0.5 rounded-full bg-white/[0.08] hover:bg-white/[0.18] border border-white/[0.15] text-white text-[11px] font-mono font-medium align-middle active:scale-95 transition-all cursor-pointer select-none shadow-sm shadow-black/40"
                   title={`Jump to video at ${children}`}
                 >
-                  <Play className="w-2.5 h-2.5 fill-blue-300 shrink-0" />
+                  <Play className="w-2.5 h-2.5 fill-white text-white shrink-0" />
                   <span>{children}</span>
                 </button>
               )
@@ -60,30 +60,30 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
                 href={href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
+                className="text-zinc-200 underline decoration-zinc-500 hover:text-white hover:decoration-white transition-colors"
               >
                 {children}
               </a>
             )
           },
-          p: ({ children }) => <p className="mb-2.5 last:mb-0 leading-relaxed">{children}</p>,
-          ul: ({ children }) => <ul className="list-disc pl-5 mb-2.5 space-y-1">{children}</ul>,
-          ol: ({ children }) => <ol className="list-decimal pl-5 mb-2.5 space-y-1">{children}</ol>,
-          li: ({ children }) => <li className="text-zinc-200 leading-relaxed">{children}</li>,
-          strong: ({ children }) => <strong className="font-semibold text-white">{children}</strong>,
-          em: ({ children }) => <em className="italic text-zinc-300">{children}</em>,
+          p: ({ children }) => <p className="mb-2.5 last:mb-0 leading-relaxed text-zinc-300">{children}</p>,
+          ul: ({ children }) => <ul className="list-disc pl-5 mb-2.5 space-y-1 text-zinc-300">{children}</ul>,
+          ol: ({ children }) => <ol className="list-decimal pl-5 mb-2.5 space-y-1 text-zinc-300">{children}</ol>,
+          li: ({ children }) => <li className="text-zinc-300 leading-relaxed">{children}</li>,
+          strong: ({ children }) => <strong className="font-semibold text-white tracking-tight">{children}</strong>,
+          em: ({ children }) => <em className="italic text-zinc-400">{children}</em>,
           code: ({ children }) => (
-            <code className="bg-white/[0.08] text-blue-300 font-mono text-xs px-1.5 py-0.5 rounded">
+            <code className="bg-white/[0.07] text-zinc-200 font-mono text-xs px-1.5 py-0.5 rounded border border-white/[0.06]">
               {children}
             </code>
           ),
           pre: ({ children }) => (
-            <pre className="bg-zinc-900 border border-white/10 p-3 rounded-xl overflow-x-auto my-2 text-xs font-mono text-zinc-200">
+            <pre className="bg-zinc-950 border border-white/[0.08] p-3.5 rounded-xl overflow-x-auto my-2 text-xs font-mono text-zinc-300">
               {children}
             </pre>
           ),
           blockquote: ({ children }) => (
-            <blockquote className="border-l-2 border-blue-400/50 pl-3 my-2 text-zinc-400 italic">
+            <blockquote className="border-l-2 border-zinc-600 pl-3 my-2 text-zinc-400 italic">
               {children}
             </blockquote>
           ),
